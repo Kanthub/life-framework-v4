@@ -1,58 +1,66 @@
-/* 罗盘节点：宣纸星球
-   球面＝纸色底 + 左上受光 + 右下墨晕；表面一层淡墨山水缓慢横移，读作自转；
-   外侧一道极细的倾斜光环和一颗小卫星。文字不动，始终正着读。 */
-.map-node.orb{
+/* 罗盘三样式（design/compass-options.html）：甲 太极星盘 / 乙 阴阳昼夜 / 丙 浑天仪
+   .life-map[data-compass="a|b|c"] 由 orbit.js 设置；底图是 orbit.js 画的 .compass-art（SVG，viewBox 524）
+   没有 data-compass（脚本未运行）时仍显示旧的仪表线 */
+.life-map[data-compass] .instrument-lines,
+.life-map[data-compass] .dir{display:none}
+.compass-art{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:1}
+.compass-art.core{z-index:3}
+.compass-art.front{z-index:4}
+.compass-art text{font-family:var(--font-brand)}
+
+/* ---- 中心：圆盘画在 SVG 里，这里只留领域名 ---- */
+.life-map[data-compass] .map-center{background:none;box-shadow:none;border-radius:0;z-index:2;pointer-events:none}
+.life-map[data-compass] .map-center:after,
+.life-map[data-compass] .map-center svg{display:none}
+.life-map[data-compass] .map-center b{margin:0;white-space:nowrap;letter-spacing:.08em}
+.life-map[data-compass] .map-center small{display:none}
+/* 甲：名字压在太极上，纸色描边 */
+.life-map[data-compass="a"] .map-center{left:25%;width:50%;top:44%;height:12%}
+.life-map[data-compass="a"] .map-center b,
+.life-map[data-compass="c"] .map-center b{color:#14211f;text-shadow:0 0 2px #f6f2e8,0 0 3px #f6f2e8,0 0 5px #f6f2e8,0 0 7px rgba(246,242,232,.9)}
+.life-map[data-compass="a"] .map-center b{font-size:16px}
+/* 乙：青绿太阳（r58 / 524） */
+.life-map[data-compass="b"] .map-center{left:38.93%;top:38.93%;width:22.14%;height:22.14%}
+.life-map[data-compass="b"] .map-center b{font-size:16px;color:#fff}
+.life-map[data-compass="b"] .map-center small{display:block;font-size:8px;margin-top:3px;letter-spacing:.12em;color:#cfe0dc}
+/* 丙：名字落在太极球下方，前方节点可以从它上面经过 */
+.life-map[data-compass="c"] .map-center{left:25%;width:50%;top:61.3%;height:8%;z-index:3}
+.life-map[data-compass="c"] .map-center b{font-size:14px}
+
+/* ---- 节点：宣纸星球（左上受光，纸色光晕） ---- */
+.life-map[data-compass] .map-node.orb{
+  width:54px;height:54px;margin:-27px;padding:3px 2px;
   overflow:visible;isolation:isolate;
-  border:1px solid rgba(20,33,31,.5);
-  background:
-    radial-gradient(circle at 33% 27%,rgba(255,254,250,.98),rgba(255,254,250,0) 40%),
-    radial-gradient(circle at 72% 80%,rgba(12,69,75,.13),rgba(12,69,75,0) 55%),
-    radial-gradient(circle at 50% 50%,#f5f1e7 0,#efe9dc 66%,#e2dac8 100%);
-  box-shadow:
-    inset -4px -6px 10px -6px rgba(16,40,40,.26),
-    inset 2px 3px 6px -3px rgba(255,255,255,.9),
-    0 0 0 3px rgba(238,233,221,.7),
-    0 0 16px 3px rgba(244,240,229,.6),
-    0 7px 12px -8px rgba(20,36,34,.34);
+  border:1px solid rgba(20,33,31,.55);
+  background:radial-gradient(75% 75% at 36% 30%,#fffdf8 0,#efe9dc 60%,#ddd4c0 100%);
+  box-shadow:0 0 0 4px rgba(240,235,223,.75);
   cursor:grab;touch-action:none;
   transition:transform .25s ease,box-shadow .25s ease;
 }
-/* 表面纹理：山水长卷在球内横向流动 */
-.map-node.orb:before{
-  content:"";position:absolute;inset:1px;border-radius:50%;z-index:-1;pointer-events:none;
-  background:url("visual/mountain-panorama.png") var(--tex,0%) 64%/auto 230% repeat-x;
-  mix-blend-mode:multiply;opacity:.42;
-  -webkit-mask:radial-gradient(circle at 42% 40%,#000 38%,rgba(0,0,0,.25) 72%,transparent 74%);
-          mask:radial-gradient(circle at 42% 40%,#000 38%,rgba(0,0,0,.25) 72%,transparent 74%);
-  animation:orb-spin var(--spin,90s) linear infinite;
-}
-/* 倾斜光环 + 卫星 */
-.map-node.orb:after{
-  content:"";position:absolute;left:50%;top:50%;width:calc(134% + 9px);height:calc(134% + 9px);margin:calc(-67% - 4.5px);
-  border-radius:50%;pointer-events:none;z-index:-2;
-  /* 轨道细线与卫星都画在盒子里面，卫星正好落在细线上，不会被裁掉 */
-  background:
-    radial-gradient(circle at 50% 4.5px,#a4412f 0 2.1px,rgba(176,73,52,.22) 2.7px,transparent 4.5px),
-    radial-gradient(circle closest-side,transparent calc(100% - 5px),rgba(12,69,75,.15) calc(100% - 5px),rgba(12,69,75,.15) calc(100% - 4px),transparent calc(100% - 4px));
-  transform:rotate(var(--moon0,0deg));
-  animation:orb-moon var(--moon,20s) linear infinite;
-}
-.map-node.orb b{white-space:nowrap}
-.map-node.orb b,.map-node.orb small{position:relative;z-index:1;text-shadow:0 0 6px rgba(246,242,232,.95),0 0 2px rgba(246,242,232,.95)}
+.life-map[data-compass] .map-node.orb b{font-size:12.5px;line-height:1.25;white-space:nowrap;color:#14211f}
+.life-map[data-compass] .map-node.orb small{font-size:8.5px;line-height:1.2;margin-top:1px;letter-spacing:.02em;color:#626964;white-space:nowrap}
+.life-map[data-compass] .map-node.orb b,
+.life-map[data-compass] .map-node.orb small{position:relative;z-index:1}
+.life-map[data-compass] .map-node.orb:hover{transform:scale(1.07);box-shadow:0 0 0 4px rgba(240,235,223,.88),0 0 0 5px rgba(7,87,90,.45)}
+.life-map[data-compass] .map-node.orb:focus-visible{outline:2px solid var(--deep-teal);outline-offset:5px}
+.life-map[data-compass] .map-add{width:54px;height:54px;margin:-27px}
 
-@keyframes orb-spin{to{background-position-x:calc(var(--tex,0%) + 1086px)}}
-@keyframes orb-moon{from{transform:rotate(var(--moon0,0deg))}to{transform:rotate(calc(var(--moon0,0deg) + 360deg))}}
+/* 乙：背光面朝外的阴影；进入阴面时整体染一层青色 */
+.life-map[data-compass="b"] .map-node.orb:before,
+.life-map[data-compass="b"] .map-node.orb:after{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;z-index:0}
+.life-map[data-compass="b"] .map-node.orb:before{background:linear-gradient(var(--out,90deg),rgba(7,87,90,0) 45%,rgba(11,46,47,.42))}
+.life-map[data-compass="b"] .map-node.orb:after{background:#07575a;opacity:0;transition:opacity 1.2s}
+.life-map[data-compass="b"] .map-node.orb.is-night:after{opacity:.2}
 
-.map-node.orb:hover{transform:scale(1.07);box-shadow:
-  inset -6px -8px 14px -6px rgba(16,40,40,.32),
-  inset 3px 4px 8px -4px rgba(255,255,255,.8),
-  0 0 0 3px rgba(238,233,221,.9),0 0 0 4px rgba(12,69,75,.42),
-  0 0 22px 4px rgba(240,235,222,.7),
-  0 10px 16px -8px rgba(20,36,34,.42)}
-.map-node.orb:focus-visible{outline:2px solid var(--deep-teal);outline-offset:4px}
+/* 丙：纵深 —— 后方变小变淡、在太极球之下；前方在球之上 */
+.life-map[data-compass="c"] #mapNodes>*{scale:var(--k,1)}
+:where(.life-map[data-compass="c"]) .map-node{opacity:var(--dop,1)}
+.life-map[data-compass="c"] #mapNodes>.is-back{z-index:2}
+.life-map[data-compass="c"] #mapNodes>.is-front{z-index:5}
 
-/* 拖动中 */
-.map-node.orb.is-dragging{cursor:grabbing;z-index:5;transform:scale(1.12);transition:transform .2s ease}
+/* ---- 拖动中 ---- */
+.life-map .map-node.orb.is-dragging{cursor:grabbing;z-index:6;transform:scale(1.12);transition:transform .2s ease}
+.life-map #mapNodes>.map-node.is-dragging{z-index:6}
 .life-map.is-dragging{cursor:grabbing;user-select:none}
 .life-map.is-dragging .map-node:not(.is-dragging){opacity:.72}
 .orbit-trace{
@@ -61,7 +69,7 @@
 }
 .orbit-trace.on-ring{border:1.4px solid rgba(176,73,52,.55)}
 
-.map-node.orb.is-leaving{opacity:.45;transform:scale(.9)}
+.life-map .map-node.orb.is-leaving{opacity:.45;transform:scale(.9)}
 /* 节点拖到领域上：领域行亮起，提示松手即移入 */
 .domain.is-drop{background:rgba(12,69,75,.12)!important;box-shadow:inset 3px 0 0 var(--cinnabar)}
 .domain.is-drop b:after{content:"　松手移入";font-weight:400;font-size:11px;color:var(--cinnabar)}
@@ -69,6 +77,26 @@
 .modal-field select.modal-input{display:block;width:100%;height:auto;padding:8px;margin-top:4px}
 .map-add{transition:background .2s,border-color .2s,color .2s}
 
+/* ---- 样式切换：罗盘左上角的三枚小格（甲 乙 丙） ---- */
+.life-map .compass-switch{position:absolute;left:0;top:0;z-index:6;display:flex;border:1px solid rgba(20,33,31,.38);border-radius:3px;background:rgba(244,239,228,.62);overflow:hidden}
+.life-map .compass-switch button{all:unset;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;width:36px;height:36px;cursor:pointer;font-family:var(--font-brand);color:var(--ink-primary);transition:background .2s,color .2s}
+.life-map .compass-switch button+button{border-left:1px dashed rgba(20,33,31,.28)}
+.life-map .compass-switch b{display:block;font-size:14px;font-weight:700;line-height:1}
+.life-map .compass-switch small{display:block;font-size:9px;line-height:1;margin-top:4px;letter-spacing:.04em;color:var(--ink-secondary)}
+.life-map .compass-switch button:hover{background:rgba(12,69,75,.09)}
+.life-map .compass-switch button[aria-checked="true"]{background:var(--deep-teal);color:#f4efe3}
+.life-map .compass-switch button[aria-checked="true"] b{color:#f4efe3}
+.life-map .compass-switch button[aria-checked="true"] small{color:rgba(244,239,227,.82)}
+.life-map .compass-switch button:focus-visible{outline:2px solid var(--cinnabar);outline-offset:-3px}
+
+@media (max-width:760px){
+  .life-map[data-compass] .map-node.orb,.life-map[data-compass] .map-add{width:46px;height:46px;margin:-23px}
+  .life-map[data-compass] .map-node.orb b{font-size:11px}
+  .life-map[data-compass] .map-node.orb small{font-size:7.5px}
+  .life-map .compass-switch button{width:30px;height:30px}
+  .life-map .compass-switch small{display:none}
+}
 @media (prefers-reduced-motion:reduce){
-  .map-node.orb:before,.map-node.orb:after{animation:none}
+  .life-map[data-compass="b"] .map-node.orb:after,
+  .life-map[data-compass] .map-node.orb{transition:none}
 }

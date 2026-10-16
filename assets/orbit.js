@@ -2,7 +2,7 @@
    - 节点位置用极坐标保存在节点上：a 角度（度，上方为 0，顺时针），r 半径（占 435 罗盘边长的比例）
      r 的取值范围、含义与旧版完全一致（0.239～0.395，0.2736 / 0.3586 为两条吸附环）；
      每种样式把这段「标准半径」映射到自己的轨道上，所以切换样式不会改写数据
-   - 节点按所在轨道公转，内快外慢；鼠标在罗盘上时减速停下，方便点击
+   - 节点按所在轨道公转，内快外慢；鼠标压在节点上时减速停下，方便点击（指针静止几秒后自动恢复）
    - 拖动节点到新位置，靠近轨道时自动吸附；松手即保存
    - 样式选择存在 localStorage「kongwo-compass-style」 */
 (function () {
@@ -21,8 +21,9 @@
   var INK = '#14211f', TEAL = '#07575a', RED = '#b64b35', PAPER = '#f0ebdf';
 
   var reduce = matchMedia('(prefers-reduced-motion: reduce)');
-  var clock = parseFloat(localStorage.getItem(PHASE_KEY)) || 0;   // 公转时钟（秒）
-  var speed = reduce.matches ? 0 : 1, target = 1;                 // 0..1，悬停时缓停
+  var clock = parseFloat(localStorage.getItem(PHASE_KEY));        // 公转时钟（秒）
+  if (!isFinite(clock) || clock < 0) clock = 0;
+  var speed = reduce.matches ? 0 : 1;                             // 0..1，悬停时缓停
   var drag = null, justDragged = false;
 
   /* ———— 三种样式的几何：knots 把标准半径映射到设计稿半径；orbits 为可吸附的轨道 ———— */
@@ -222,7 +223,7 @@
     decorate();
   }
 
-  /* ———— 样式切换控件（罗盘左上角：甲 乙 丙） ———— */
+  /* ———— 样式切换控件（罗盘右侧竖排：甲 乙 丙） ———— */
   var switcher = map.querySelector('.compass-switch');
   if (!switcher) {
     switcher = document.createElement('div');
@@ -310,19 +311,52 @@
     return at;
   }
 
-  var last = 0, saved = 0;
-  function saveClock() { try { localStorage.setItem(PHASE_KEY, clock.toFixed(2)); } catch (e) {} }
-  function tick(now) {
-    var dt = last ? Math.min(.1, (now - last) / 1000) : 0; last = now;
-    var t = reduce.matches || document.getElementById('cardLayer') && document.getElementById('cardLayer').classList.contains('is-open') ? 0 : target;
-    speed += (t - speed) * Math.min(1, dt * 3);
-    if (speed > .001) { clock += speed * dt; layout(); }
-    if (now - saved > 10000) { saved = now; saveClock(); }
-    requestAnimationFrame(tick);
+  /* ———— 悬停减速 ————
+     旧做法：pointerenter 置 0、pointerleave 置 1。指针只要停在罗盘方框里（哪怕是空白角落）就一直不转；
+     切走标签页、窗口失焦时浏览器又常常不补发 pointerleave，回来后就永远停着。
+     现在每帧按「最近一次指针位置」现算：只有指针压在节点 / 新增上、且 HOVER_HOLD 内动过，才减速停下 */
+  var HOVER_PAD = 10, HOVER_HOLD = 4000;   // 节点外扩的感应距离（px）、指针静止多久后恢复公转（ms）
+  var ptr = null;                          // { x, y, at }：最近一次鼠标 / 触控笔位置
+  addEventListener('pointermove', function (e) {
+    if (e.pointerType === 'touch') return;
+    ptr = { x: e.clientX, y: e.clientY, at: performance.now() };
+    // 按住时丢了 pointerup（例如在窗口外松手）：再动时发现键已松开，就当拖动取消
+    if (drag && !e.buttons) cancelDrag();
+  }, true);
+  function forget() { ptr = null; cancelDrag(); }
+  document.documentElement.addEventListener('mouseleave', function () { ptr = null; });
+  addEventListener('blur', forget);
+  document.addEventListener('visibilitychange', function () { if (document.hidden) forget(); last = 0; });
+  function hovering(now) {
+    if (!ptr || now - ptr.at > HOVER_HOLD) return false;
+    var els = box.querySelectorAll('.map-node, .map-add');
+    for (var i = 0; i < els.length; i++) {
+      var r = els[i].getBoundingClientRect();
+      if (ptr.x > r.left - HOVER_PAD && ptr.x < r.right + HOVER_PAD && ptr.y > r.top - HOVER_PAD && ptr.y < r.bottom + HOVER_PAD) return true;
+    }
+    return false;
+  }
+  function paused(now) {
+    if (reduce.matches || (drag && drag.moved)) return true;
+    var cl = document.getElementById('cardLayer');
+    if (cl && cl.classList.contains('is-open')) return true;
+    return hovering(now);
   }
 
-  map.addEventListener('pointerenter', function () { target = 0; });
-  map.addEventListener('pointerleave', function () { if (!drag) target = 1; });
+  var last = 0, saved = 0, failed = false;
+  function saveClock() { try { localStorage.setItem(PHASE_KEY, clock.toFixed(2)); } catch (e) {} }
+  function tick(now) {
+    requestAnimationFrame(tick);             // 先排下一帧：这一帧哪怕抛错，公转也不会断
+    var dt = last && now > last ? Math.min(.1, (now - last) / 1000) : 0; last = now;
+    try {
+      speed += ((paused(now) ? 0 : 1) - speed) * Math.min(1, dt * 3);
+      if (!(speed >= 0 && speed <= 1)) speed = 0;
+      if (speed > .001) { clock += speed * dt; layout(); }
+    } catch (err) {
+      if (!failed) { failed = true; console.error('[orbit] tick', err); }
+    }
+    if (now - saved > 10000) { saved = now; saveClock(); }
+  }
   addEventListener('pagehide', saveClock);
 
   /* ———— 拖动 ———— */
@@ -367,6 +401,7 @@
     g.classList.toggle('on-ring', !!ring);
   }
 
+  addEventListener('pointerdown', function () { justDragged = false; }, true);
   box.addEventListener('pointerdown', function (e) {
     if (e.button !== 0 || e.target.closest('[data-edit],[data-del],[data-add],.map-add')) return;
     var el = e.target.closest('.map-node'); if (!el) return;
@@ -377,7 +412,7 @@
     if (!drag || e.pointerId !== drag.id) return;
     if (!drag.moved) {
       if (Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y) < 5) return;
-      drag.moved = true; target = 0;
+      drag.moved = true;
       try { drag.el.setPointerCapture(drag.id); } catch (er) {}
       drag.el.classList.add('is-dragging'); map.classList.add('is-dragging');
     }
@@ -402,13 +437,13 @@
     if (!drag || (e && e.pointerId !== drag.id)) return;
     var dr = drag; drag = null;
     if (!dr.moved) return;
+    ptr = null;               // 松手处正压着刚放下的节点：指针再动之前不算悬停，放下就接着转
     dr.el.classList.remove('is-dragging'); map.classList.remove('is-dragging');
     trace(null);
     justDragged = true; setTimeout(function () { justDragged = false; }, 0);
     if (dr.dom) {
       dr.dom.classList.remove('is-drop'); dr.el.classList.remove('is-leaving');
       if (!moveNode(dr.i, +dr.dom.dataset.i)) layout();
-      if (!map.matches(':hover')) target = 1;
       return;
     }
     var n = domains[active].nodes[dr.i];
@@ -420,7 +455,17 @@
       saveDomains();
     }
     layout();
-    if (!map.matches(':hover')) target = 1;
+  }
+  // 拖动被打断（丢了 pointerup、窗口失焦、切后台）：放弃这次拖动，节点回原位继续公转
+  function cancelDrag() {
+    if (!drag) return;
+    var dr = drag; drag = null;
+    if (!dr.moved) return;
+    dr.el.classList.remove('is-dragging', 'is-leaving'); map.classList.remove('is-dragging');
+    justDragged = true;       // 回来松手时浏览器补发的 click 不要打开卡片（下一次按下时清掉）
+    if (dr.dom) dr.dom.classList.remove('is-drop');
+    trace(null);
+    layout();
   }
   addEventListener('pointerup', end);
   addEventListener('pointercancel', end);

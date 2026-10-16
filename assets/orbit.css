@@ -84,10 +84,12 @@
 .modal-field select.modal-input{display:block;width:100%;height:auto;padding:8px;margin-top:4px}
 .map-add{transition:background .2s,border-color .2s,color .2s}
 
-/* ---- 样式切换：罗盘左上角的三枚小格（甲 乙 丙） ---- */
-.life-map .compass-switch{position:absolute;left:0;top:0;z-index:6;display:flex;border:1px solid rgba(20,33,31,.38);border-radius:3px;background:rgba(244,239,228,.62);overflow:hidden}
+/* ---- 样式切换：罗盘右侧竖排的三枚小格（甲 / 乙 / 丙） ----
+   罗盘让出右侧 --sw 宽的一条（按钮 + 间距），按钮贴在罗盘方框外的右上角，不压在罗盘、节点、新增上 */
+.life-map[data-compass]{--sw:48px;--mw:min(435px,90%,calc(100% - var(--sw)));width:var(--mw);margin-left:calc((100% - var(--sw) - var(--mw)) / 2);margin-right:auto}
+.life-map .compass-switch{position:absolute;left:calc(100% + 10px);top:0;z-index:6;display:flex;flex-direction:column;border:1px solid rgba(20,33,31,.38);border-radius:3px;background:rgba(244,239,228,.62);overflow:hidden}
 .life-map .compass-switch button{all:unset;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;width:36px;height:36px;cursor:pointer;font-family:var(--font-brand);color:var(--ink-primary);transition:background .2s,color .2s}
-.life-map .compass-switch button+button{border-left:1px dashed rgba(20,33,31,.28)}
+.life-map .compass-switch button+button{border-top:1px dashed rgba(20,33,31,.28)}
 .life-map .compass-switch b{display:block;font-size:14px;font-weight:700;line-height:1}
 .life-map .compass-switch small{display:block;font-size:9px;line-height:1;margin-top:4px;letter-spacing:.04em;color:var(--ink-secondary)}
 .life-map .compass-switch button:hover{background:rgba(12,69,75,.09)}
@@ -100,6 +102,8 @@
   .life-map[data-compass] .map-node.orb,.life-map[data-compass] .map-add{width:46px;height:46px;margin:-23px}
   .life-map[data-compass] .map-node.orb b{font-size:11px}
   .life-map[data-compass] .map-node.orb small{font-size:7.5px}
+  .life-map[data-compass]{--sw:40px;--mw:min(360px,94%,calc(100% - var(--sw)))}
+  .life-map .compass-switch{left:calc(100% + 8px)}
   .life-map .compass-switch button{width:30px;height:30px}
   .life-map .compass-switch small{display:none}
 }

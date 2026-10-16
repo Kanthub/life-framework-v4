@@ -1,6 +1,8 @@
 /* 罗盘三样式（design/compass-options.html）：甲 太极星盘 / 乙 阴阳昼夜 / 丙 浑天仪
    .life-map[data-compass="a|b|c"] 由 orbit.js 设置；底图是 orbit.js 画的 .compass-art（SVG，viewBox 524）
    没有 data-compass（脚本未运行）时仍显示旧的仪表线 */
+/* 首屏：orbit.js 接管前先把罗盘内容藏起来，免得旧仪表盘闪一下（index.html 头部设 compass-boot，3 秒兜底移除） */
+.compass-boot .life-map:not([data-compass])>*{visibility:hidden}
 .life-map[data-compass] .instrument-lines,
 .life-map[data-compass] .dir{display:none}
 .compass-art{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:1}
@@ -23,8 +25,9 @@
 .life-map[data-compass="b"] .map-center{left:38.93%;top:38.93%;width:22.14%;height:22.14%}
 .life-map[data-compass="b"] .map-center b{font-size:16px;color:#fff}
 .life-map[data-compass="b"] .map-center small{display:block;font-size:8px;margin-top:3px;letter-spacing:.12em;color:#cfe0dc}
-/* 丙：名字落在太极球下方，前方节点可以从它上面经过 */
-.life-map[data-compass="c"] .map-center{left:25%;width:50%;top:61.3%;height:8%;z-index:3}
+/* 丙：名字落在太极球下方。前排轨道正好从这里经过，节点停在上面时会把名字整个盖住，
+   所以名字压在所有节点之上（纸色描边保证可读，不接收指针，不妨碍点节点） */
+.life-map[data-compass="c"] .map-center{left:25%;width:50%;top:61.3%;height:8%;z-index:6}
 .life-map[data-compass="c"] .map-center b{font-size:14px}
 
 /* ---- 节点：宣纸星球（左上受光，纸色光晕） ---- */
@@ -72,7 +75,11 @@
 .life-map .map-node.orb.is-leaving{opacity:.45;transform:scale(.9)}
 /* 节点拖到领域上：领域行亮起，提示松手即移入 */
 .domain.is-drop{background:rgba(12,69,75,.12)!important;box-shadow:inset 3px 0 0 var(--cinnabar)}
-.domain.is-drop b:after{content:"　松手移入";font-weight:400;font-size:11px;color:var(--cinnabar)}
+/* 提示浮在行右上角，不占排版：否则名字折行、整列跳动，指针下的目标会换掉 */
+.domain.is-drop{position:relative}
+.domain.is-drop b:after{content:"松手移入";position:absolute;right:12px;top:8px;font-weight:400;font-size:11px;letter-spacing:.06em;color:var(--cinnabar);white-space:nowrap}
+/* 拖动中不弹出节点上的编辑 / 删除小按钮 */
+.life-map.is-dragging .map-node .node-ops{display:none!important}
 .modal-field{display:block;margin-top:10px;font-size:12px;color:var(--ink-secondary)}
 .modal-field select.modal-input{display:block;width:100%;height:auto;padding:8px;margin-top:4px}
 .map-add{transition:background .2s,border-color .2s,color .2s}

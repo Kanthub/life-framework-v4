@@ -266,6 +266,13 @@
       var b = el.querySelector('b'); b.style.fontSize = '';
       var room = el.clientWidth - 2, w = b.scrollWidth;
       if (w > room) b.style.fontSize = (parseFloat(getComputedStyle(b).fontSize) * room / w).toFixed(1) + 'px';
+      // 副标题（如「热量·碳脂比·断食」）字已经很小，不再缩：放不下就只留前几段，全文放进悬停提示
+      var s = el.querySelector('small'); if (!s) return;
+      var full = n.s == null ? s.textContent : String(n.s), parts = full.split(/\s*[·・、，,/]\s*/), k = parts.length;
+      s.textContent = full;
+      while (k > 1 && s.scrollWidth > room + 4) s.textContent = parts.slice(0, --k).join('·') + (k < parts.length ? '…' : '');
+      if (s.scrollWidth > room + 4) { s.style.maxWidth = room + 'px'; s.style.overflow = 'hidden'; s.style.textOverflow = 'ellipsis'; }
+      if (s.textContent !== full) el.title = n.t + ' · ' + full + '\n' + el.title;
     });
     // 甲：每个节点后面拖一小段墨色轨迹
     if (art.trails) {
@@ -341,6 +348,11 @@
       S.orbits.forEach(function (R) { if (Math.abs(best - R) < SNAP) snapped = R; });
       d = snapped || best;
       a = fit(d).th * 180 / Math.PI + 90;
+      // 吸附到轨道 / 指针跑出最外圈时，fit 给的角度会偏离指针很远（椭圆很扁）：改取椭圆上离指针最近的点
+      for (var g = 0, near = Infinity, a0 = a; g < 360; g += 2) {
+        var q = point(a0 + g, d), dist = (q.x - x) * (q.x - x) + (q.y - y) * (q.y - y);
+        if (dist < near) { near = dist; a = a0 + g; }
+      }
     }
     return { a: a, d: d, r: toR(d), ring: snapped };
   }

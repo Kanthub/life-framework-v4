@@ -1,0 +1,625 @@
+/* ============================================================
+   polish.css — 质感校准层（最后加载，覆盖前面所有样式）
+   对照设计稿逐项校准：字体、纸色、航图、时间线、细节
+   ============================================================ */
+
+/* ---- 1. 本地宋体（思源宋体子集，随项目自带，离线可用） ---- */
+@font-face{
+  font-family:"Noto Serif SC Local";
+  src:url("fonts/NotoSerifSC-700.woff2") format("woff2");
+  font-weight:700;font-style:normal;font-display:swap;
+}
+@font-face{
+  font-family:"Noto Serif SC Local";
+  src:url("fonts/NotoSerifSC-900.woff2") format("woff2");
+  font-weight:900;font-style:normal;font-display:swap;
+}
+
+:root{
+  /* 设计稿实测纸色：整体更暖、更沉一点 */
+  --paper-base:#ebe4d3;
+  --paper-raised:rgba(246,241,230,.66);
+  --ink-primary:#141f1d;
+  --ink-secondary:#5d645e;
+  --deep-teal:#07575a;
+  --cinnabar:#b04934;
+  /* 全站宋体化：设计稿通篇衬线，无黑体 */
+  --font-brand:"Noto Serif SC Local","Noto Serif SC","Source Han Serif SC","Songti SC","STSong","SimSun",serif;
+  --font-reading:"Noto Serif SC Local","Noto Serif SC","Source Han Serif SC","Songti SC","STSong","SimSun",serif;
+  --font-control:"Noto Serif SC Local","Noto Serif SC","Source Han Serif SC","Songti SC","STSong","SimSun",serif;
+  --side:#161c1c;
+}
+
+html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+
+/* ---- 2. 纸张：压白提纹理，加轻微四角压暗（设计稿的照片级纸感） ---- */
+body{
+  background-image:
+    linear-gradient(rgba(248,244,235,.18),rgba(236,229,214,.12)),
+    var(--paper-image);
+}
+body:before{
+  content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(120% 90% at 50% 42%,transparent 62%,rgba(72,60,34,.075) 100%);
+}
+
+.masthead,.panel{
+  background-image:linear-gradient(rgba(255,255,255,.2),rgba(234,227,212,.14)),var(--paper-image);
+}
+
+/* ---- 3. 字重与标题（设计稿主标题为大黑宋） ---- */
+.title{font-weight:900;letter-spacing:.06em;text-shadow:0 1px 0 rgba(255,255,255,.35)}
+.panel-title h2{font-weight:700;letter-spacing:.05em}
+.domain-heading h3{font-weight:700}
+.sidebar h1{font-weight:700}
+.map-center b{font-weight:700}
+
+/* 眉批、格言、历法 */
+.credo{font-family:var(--font-brand);font-weight:700;font-size:12.5px;letter-spacing:.14em;color:var(--ink-primary)}
+.motto{font-weight:400}
+.domain b{font-weight:700}
+.domain small,.domain-heading p,.panel-title span,.timeline-list article p,.lists li small{font-weight:400}
+
+/* ---- 4. 领域列表 ---- */
+.domain.on{background-color:rgba(196,211,203,.46)}
+.domain.on>span{background:var(--cinnabar);border-color:var(--cinnabar)}
+.domain>span{color:var(--ink-primary)}
+.domain-mountain{opacity:.32}
+
+/* ---- 5. 生命航图：中心圆做旧 + 环线收敛 ---- */
+.map-center{
+  background:
+    radial-gradient(circle at 36% 28%,rgba(255,255,255,.08),transparent 44%),
+    radial-gradient(circle at 38% 30%,#0d5f62,var(--deep-teal) 58%,#024042);
+  box-shadow:
+    0 0 0 3px rgba(240,235,223,.94),
+    0 0 0 4px rgba(7,87,90,.5),
+    0 14px 26px -12px rgba(23,42,40,.45);
+}
+.map-center:after{
+  content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;
+  background:var(--paper-image);background-size:300px;
+  mix-blend-mode:overlay;opacity:.5;
+}
+.map-center svg{stroke-width:1;opacity:.92}
+
+/* 仪表线：三角锚点缩小、刻度变淡，回到设计稿的精密感 */
+.instrument-lines .anchors path{
+  transform-box:fill-box;transform-origin:center;transform:scale(.68);
+  stroke-width:.9;
+}
+.instrument-lines .radials{stroke:rgba(23,55,51,.28)}
+.instrument-lines .ticks{stroke:rgba(23,55,51,.36)}
+.life-map:before{opacity:.7;transform:scale(.86)}
+.life-map .r1{box-shadow:0 0 0 3px rgba(238,232,219,.7),0 0 0 4px rgba(7,87,90,.18)}
+
+/* 节点圆：描边更实、微投影（设计稿的浮凸感） */
+.map-node{
+  border-color:rgba(29,43,40,.6);
+  box-shadow:0 1px 0 rgba(255,255,255,.55) inset,0 2px 5px -2px rgba(30,45,42,.28);
+}
+.map-node b{font-weight:700}
+
+/* ---- 6. 原则 / 实践：衬线标题、大字号、圆角勾选 ---- */
+.lists h4{font-family:var(--font-brand);font-weight:700;font-size:13.5px;letter-spacing:.04em}
+.lists h4 i{font-family:var(--font-control);background:rgba(222,217,205,.85)}
+.lists li b{font-family:var(--font-brand);font-weight:700;font-size:13px;letter-spacing:.02em;color:var(--ink-primary)}
+.lists li small{font-size:10px}
+.lists li>span{font-family:var(--font-brand);width:19px;height:19px;font-size:10px;background:var(--deep-teal)}
+.lists label i{border-radius:4px;border-color:rgba(29,43,40,.55)}
+.lists label input:checked+i{background:var(--deep-teal);border-color:var(--deep-teal)}
+.lists label input:checked+i:after{font-weight:700}
+/* 实践条目：元信息（每日 · 长期）右对齐到标题行，与设计稿一致 */
+.lists li:has(label) div{position:relative;padding-right:78px}
+.lists li:has(label) div small{position:absolute;right:22px;top:3px;white-space:nowrap}
+
+/* ---- 7. 时间线：图标改为设计稿的纸底彩描边，标题宋体加大 ---- */
+.evt-icon{
+  border:1px solid rgba(29,43,40,.4);border-radius:5px;
+  background:rgba(244,239,227,.85);
+  color:var(--deep-teal);
+  box-shadow:0 1px 2px -1px rgba(30,45,42,.2);
+}
+.evt-icon.warm{color:var(--cinnabar)}
+.evt-icon.cool{color:#47708a}
+.evt-icon.deep{color:#0b4f55}
+.timeline-list article div b{font-family:var(--font-brand);font-weight:700;font-size:13px;letter-spacing:.02em}
+.timeline-list article p{font-size:10px}
+.timeline-list time b{font-weight:700}
+.timeline-list article>i{width:6px;height:6px}
+.timeline-list article>i:after{opacity:.75}
+.month b{font-family:var(--font-brand);font-weight:700}
+
+/* ---- 8. 印章与侧栏 ---- */
+.seal{filter:saturate(1.2) contrast(1.28);opacity:.95}
+.sidebar{background-color:var(--side)}
+.sidebar nav button.on{background:#c9d9d3;color:#12211f}
+
+/* 侧栏整体放大一档 */
+.sidebar{width:228px;padding:16px 12px}
+.app{margin-left:228px}
+.sidebar .brand-orbit{width:132px;height:132px;margin:20px auto 6px}
+.sidebar .brand-orbit .line-icon{display:none}
+.sidebar h1{font-size:28px;letter-spacing:.11em}
+.sidebar .brand-sub{font-size:12px;gap:13px;margin:9px 0 28px}
+.sidebar nav button,.sidebar .side-tools button{font-size:15.5px;padding:14px 22px;gap:17px}
+.sidebar nav button b{font-size:26px}
+.sidebar nav .line-icon{width:25px;height:25px}
+.sidebar .side-tools{margin-top:20px;padding-top:14px}
+.sidebar .side-tools button{font-size:14.5px;padding:10px 22px}
+.sidebar .side-tools .line-icon{width:19px;height:19px}
+/* 底部标语：随 flex 布局恒定钉在侧栏底部，内边距固定，不随视口高度漂移 */
+.sidebar .mountains{bottom:110px}
+.sidebar blockquote{
+  position:relative;inset:auto;margin:auto 0 0;
+  padding:14px 16px 22px 32px;
+  font-size:12px;line-height:1.9;letter-spacing:.12em;
+}
+
+/* ---- 9. 记一笔面板 ---- */
+.activity-picks button{border-radius:4px}
+.activity-picks button.on{background:var(--deep-teal)}
+.quick textarea{background:rgba(250,247,239,.35);border-color:rgba(29,43,40,.4)}
+.meta-row button{border-radius:3px}
+
+/* ---- 10. 细节微调 ---- */
+.panel-actions .primary,.meta-row button{letter-spacing:.05em}
+.panel button{letter-spacing:.03em}
+.mini-seal{color:var(--cinnabar);border-color:rgba(176,73,52,.72)}
+/* 领域标题旁复用顶栏的「空我人生」印章（同一张 seal-kongwo 图，缩小内联） */
+.seal-inline{
+  display:inline-block;flex:none;width:21px;height:21px;padding:0;
+  vertical-align:2px;margin-left:6px;
+  filter:saturate(1.2) contrast(1.28);opacity:.92;
+}
+:focus-visible{outline-color:var(--cinnabar)}
+
+/* ---- 11. 时间线：列结构 / 分隔 / 控件对齐设计稿 ---- */
+/* 面板标题右侧的动作按钮：设计稿为纯墨点，不加边框，也不与分隔线打架 */
+.rightcol .panel-title > button { border:0; background:transparent; padding:2px 3px; margin-left:auto; color:var(--ink-secondary) }
+.rightcol .panel-title > button:hover { background:transparent; color:var(--ink-primary) }
+
+/* 月份行：‹ › 为方形描边按钮，「今天」为加宽描边按钮；下方分隔改为虚线 */
+.month { padding:12px 15px; border-bottom:1px dashed var(--rule-content); align-items:center }
+.month b { font-size:17px; line-height:1 }
+.month-nav { display:flex; align-items:center; gap:7px }
+.month-nav button { display:grid; place-items:center; min-width:27px; height:27px; padding:0 9px; border:1px solid var(--rule-panel); border-radius:3px; background:rgba(250,247,238,.35); color:var(--ink-primary); font-size:12px; line-height:1; letter-spacing:.05em }
+.month-nav button:hover { background:rgba(241,235,222,.85) }
+.month-nav button:active { transform:translateY(1px) }
+.month-nav .month-today { padding:0 13px }
+
+/* 列表：six 列 = 日期 / 轨迹线 / 时刻 / 图标 / 内容 / 更多 */
+.timeline-list { padding:2px 15px 14px }
+.timeline-list article { grid-template-columns:50px 18px 40px 30px minmax(0,1fr) 22px; gap:8px; align-items:start; min-height:0; padding:7px 0 9px; position:relative }
+.timeline-list article.group-start { border-top:1px dashed var(--rule-content); margin-top:9px; padding-top:10px }
+
+/* 轨迹线：每段铺满整条首尾相接，首尾收到圆点，末端留一段虚线尾巴 */
+.timeline-list article::before { content:""; position:absolute; left:66px; top:0; bottom:0; width:1px; background:var(--deep-teal); opacity:.68 }
+.timeline-list article.first::before { top:20px }
+.timeline-list article:last-child::before { bottom:calc(100% - 20px) }
+.timeline-list article > i { width:7px; height:7px; margin-top:10px; justify-self:center; background:var(--deep-teal); z-index:1 }
+.timeline-list article > i:after { display:none }
+.timeline-list article:last-child > i::after { display:block; content:""; position:absolute; left:3px; top:19px; width:0; height:22px; background:none; border-left:1px dashed var(--deep-teal); opacity:.55 }
+
+/* 日期与时刻 */
+.timeline-list time { padding-top:6px; font-size:10px; line-height:1.25 }
+.timeline-list time b { display:block; font-family:var(--font-brand); font-size:12px }
+.timeline-list time small { display:block; margin-top:1px; color:var(--ink-secondary) }
+.evt-time { padding-top:8px; font-family:var(--font-reading); font-style:normal; font-size:11px; line-height:1; color:var(--ink-secondary); font-variant-numeric:tabular-nums lining-nums; letter-spacing:.03em; white-space:nowrap }
+
+/* 图标纸片 + 正文密度：纸片上沿与标题行中线对齐 */
+.evt-icon { margin-top:-1px; border-color:rgba(29,43,40,.32) }
+.timeline-list article div { padding-top:5px }
+.timeline-list article div b { font-family:var(--font-brand); font-weight:700; font-size:13px; letter-spacing:.02em }
+.timeline-list article p { margin:2px 0 0; font-size:10.5px; line-height:1.5 }
+.timeline-list article > button { margin-top:7px; color:var(--ink-secondary) }
+
+/* ---- 12. 罗盘二轮校准：向设计稿收敛（09-30 二轮，对照高清稿） ----
+   中心圆 29%、雪峰山景重绘；四环 35/50/66/97%；节点 56px 六角 25.5%；
+   白菱形贴中心缘、墨菱形/墨点/朱红点分层落位；进守上下标签衬线加粗并内移 */
+.map-center{
+  left:35%;top:35%;width:30%;height:30%;
+  background:
+    radial-gradient(circle at 36% 28%,rgba(255,255,255,.07),transparent 46%),
+    radial-gradient(circle at 38% 30%,#0d5c5f,var(--deep-teal) 58%,#023c3e);
+  box-shadow:
+    0 0 0 3px rgba(240,235,223,.95),
+    0 0 0 4px rgba(7,87,90,.55),
+    0 0 0 7px rgba(7,87,90,.14),
+    0 12px 24px -12px rgba(23,42,40,.42);
+}
+.map-center:after{opacity:.4}
+.map-center svg{width:84%;height:50px;stroke-width:1;opacity:.95;stroke:#e9efe4}
+.map-center b{font-size:16px;letter-spacing:.09em;margin-top:2px}
+.map-center small{font-size:8.5px;letter-spacing:.1em;margin-top:1px}
+.life-map .r1{width:35%;height:35%;border-color:rgba(7,87,90,.4);box-shadow:none}
+.life-map .r2{width:50%;height:50%;border-color:rgba(22,55,51,.34)}
+.life-map .r4{width:66%;height:66%;border-color:rgba(22,55,51,.24)}
+.life-map .r3{width:97%;height:97%;border-color:rgba(22,55,51,.38)}
+.map-node{width:56px;height:56px;margin:-28px;padding:4px 2px;border-color:rgba(29,43,40,.55)}
+.map-node b{font-size:12px}
+.map-node small{font-size:8px}
+.n0{left:50%;top:24.5%}
+.n1{left:72.1%;top:37.25%}
+.n2{left:72.1%;top:62.75%}
+.n3{left:50%;top:75.5%}
+.n4{left:27.9%;top:37.25%}
+.n5{left:27.9%;top:62.75%}
+.instrument-lines .anchors path{transform:none;stroke-width:1}
+.instrument-lines .marks{fill:var(--deep-teal);stroke:none}
+.instrument-lines .marks-red{fill:var(--cinnabar);stroke:none}
+.instrument-lines .radials .diag{stroke:rgba(23,55,51,.3);stroke-width:.7;stroke-dasharray:1.5 4.5;stroke-linecap:round}
+.dir{font-family:var(--font-brand);font-weight:700;font-size:12.5px}
+.dir small{font-size:9px;font-weight:400;letter-spacing:.06em}
+.north{left:50%;transform:translateX(-50%);top:0}
+.south{left:50%;transform:translateX(-50%);bottom:0}
+.west{left:5.5%}
+.east{right:5.5%}
+.life-map:before{
+  left:calc(50% - 102px);top:calc(50% - 102px);margin:0;transform:none;opacity:.8;
+  box-shadow:204px 0 0 var(--cinnabar),0 204px 0 var(--cinnabar),204px 204px 0 var(--cinnabar);
+}
+
+/* ---- 12. 框架面板头部按钮：宋体字 + 规范下拉箭头（对齐设计稿） ---- */
+.panel-actions button,.panel-title>button { font-family:var(--font-brand);font-size:13px;font-weight:400;letter-spacing:.06em }
+.panel-actions button { display:inline-flex;align-items:center }
+.panel-actions .caret-icon { width:11px;height:11px;margin-left:8px;stroke-width:2.2;flex:none }
+.panel-actions .plus-icon { width:11px;height:11px;margin-right:8px;stroke-width:2.2;flex:none }
+
+/* ---- 13. 领域下拉：当前项高亮 ---- */
+.pop-menu button.on { background:var(--deep-teal);color:#f4efe3 }
+.pop-menu button.on:hover { background:var(--deep-teal-hover) }
+
+/* ---- 14. 修补：.panel-title span 的副文案规则误伤了按钮内的文字 span ---- */
+.panel-title button span { margin-left:0;font-size:13px;color:inherit;letter-spacing:.06em }
+
+/* ---- 12. 天级导航与记录编辑 ---- */
+.month-nav button:disabled{opacity:.32;cursor:default}
+.month-nav button:disabled:hover{background:rgba(250,247,238,.35)}
+.month-nav .month-today.on{border-color:var(--deep-teal);color:var(--deep-teal)}
+.modal-card .fld{display:block;font:11px var(--font-reading);color:var(--ink-secondary);letter-spacing:.06em;margin-bottom:9px}
+.modal-card .fld .modal-input{margin-top:4px;margin-bottom:0;font-size:13px;color:var(--ink-primary)}
+.modal-card .fld textarea.modal-input{height:56px}
+
+/* ---- 15. 条目可编辑：节点悬浮操作 / 空位新增 / 列表 ••• / 弹窗下拉 ---- */
+.map-node .node-ops{display:none;position:absolute;top:-9px;right:-9px;gap:3px;z-index:3}
+.map-node:hover .node-ops{display:flex}
+.node-ops i{display:grid;place-items:center;width:17px;height:17px;border-radius:50%;background:#f6f1e5;border:1px solid rgba(29,43,40,.45);font-style:normal;font-size:11px;line-height:1;color:var(--ink-primary);cursor:pointer;padding:0}
+.node-ops i:hover{background:var(--deep-teal);color:#f4efe3;border-color:var(--deep-teal)}
+.node-ops i svg{width:9px;height:9px}
+.map-add{position:absolute;width:56px;height:56px;margin:-28px;padding:0;border:1px dashed rgba(29,43,40,.5);border-radius:50%;background:rgba(250,247,238,.4);display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--ink-secondary);cursor:pointer;font-family:inherit}
+.map-add b{font-size:16px;font-weight:400;line-height:1}
+.map-add small{font-size:8px;letter-spacing:.12em;margin-top:1px}
+.map-add:hover{border-color:var(--deep-teal);color:var(--deep-teal);background:rgba(241,235,222,.85)}
+.lists li .li-more{cursor:pointer;color:var(--ink-secondary);transition:color .15s}
+.lists li .li-more:hover{color:var(--deep-teal)}
+.fld{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px;color:var(--ink-secondary);white-space:nowrap}
+select.modal-input{flex:1;appearance:auto}
+
+/* ---- 16. 方位标签贴切点（对齐设计稿：红点骑切线，文字紧贴红点外侧） ---- */
+/* 上下：标签块底/顶距红点约 8px，不再贴地图盒边缘 */
+.north { top:calc(16.67% - 54px) }
+.south { top:auto;bottom:auto;top:calc(83.33% + 25px) }
+/* 进守：文字外缘距红点 10px，垂直居中于水平轴线 */
+.west { left:auto;right:calc(87.7% + 12px);top:50%;transform:translateY(-50%) }
+.east { left:calc(87.7% + 12px);top:50%;transform:translateY(-50%) }
+.dir { white-space:nowrap }
+
+/* ---- 17. 罗盘三轮：按设计稿 1:1 实测重绘 ----
+   外环 r188（上下留缺口给方位字）、朱点环 r156、节点环 r119、中心点环 r79；
+   中心圆为墨青色 r~70，节点 r~34 白描边 */
+.life-map .ring,.life-map .cross{display:none}
+.life-map:before{display:none}
+.instrument-lines .rings{fill:none}
+.instrument-lines .rings .outer{stroke:rgba(20,33,31,.62);stroke-width:.9}
+.instrument-lines .rings .dot-ring{stroke:rgba(20,33,31,.38);stroke-width:.85;stroke-dasharray:1 3;stroke-linecap:round}
+.instrument-lines .rings .node-ring{stroke:rgba(20,33,31,.5);stroke-width:.85}
+.instrument-lines .rings .inner-dots{stroke:rgba(20,33,31,.42);stroke-width:.8;stroke-dasharray:1 2.6;stroke-linecap:round}
+.instrument-lines .guides{fill:none}
+.instrument-lines .guides .diag{stroke:rgba(20,33,31,.32);stroke-width:.7;stroke-dasharray:1.4 3.6;stroke-linecap:round}
+.instrument-lines .guides .frame{stroke:rgba(20,33,31,.3);stroke-width:.7;stroke-dasharray:1.4 3;stroke-linecap:round}
+.instrument-lines .guides .axis-h{stroke:rgba(20,33,31,.36);stroke-width:.75;stroke-dasharray:1.4 3.2;stroke-linecap:round}
+.instrument-lines .guides .axis-v{stroke:rgba(20,33,31,.55);stroke-width:.8}
+.instrument-lines .guides .spoke{stroke:rgba(20,33,31,.6);stroke-width:.9}
+.instrument-lines .marks{fill:#14211f;stroke:none}
+.instrument-lines .marks-light{fill:#f3efe4;stroke:#0b3a3f;stroke-width:.9}
+.instrument-lines .marks-red{fill:#a93b29;stroke:none}
+
+.map-center{
+  left:33.9%;top:33.9%;width:32.2%;height:32.2%;z-index:0;
+  background:
+    radial-gradient(circle at 50% 38%,rgba(40,86,90,.35),transparent 62%),
+    radial-gradient(circle at 50% 50%,#0f3f45,#0a3439 70%,#082d32);
+  box-shadow:0 0 0 2px rgba(240,235,223,.9),0 0 0 3px rgba(11,52,57,.55);
+}
+.map-center:after{opacity:.55;mix-blend-mode:soft-light;background-size:220px}
+.map-center svg{width:68%;height:46px;margin-top:-4px;stroke:#dfe6df;stroke-width:.9;opacity:.92}
+.map-center b{font-size:19px;letter-spacing:.06em;margin-top:6px;color:#f3efe4}
+.map-center small{font-family:var(--font-brand);font-weight:400;font-size:10px;letter-spacing:.14em;margin-top:4px;color:rgba(236,232,220,.86)}
+
+.map-node{width:68px;height:68px;margin:-34px;padding:4px 2px;border:1.2px solid rgba(20,33,31,.78);background-color:#f1ece0;box-shadow:0 0 0 3px rgba(238,233,221,.9)}
+.map-node b{font-size:14px;line-height:1.3}
+.map-node small{font-size:9.5px;letter-spacing:.04em;margin-top:2px;color:var(--ink-secondary)}
+.map-add{width:68px;height:68px;margin:-34px}
+/* 六节点落在 r119 环上，0/60/120…（以上方为起点） */
+.n0{left:50%;top:22.64%}
+.n1{left:73.69%;top:36.32%}
+.n2{left:73.69%;top:63.68%}
+.n3{left:50%;top:77.36%}
+.n4{left:26.31%;top:36.32%}
+.n5{left:26.31%;top:63.68%}
+
+/* 方位字：上下骑在外环缺口里，进守在外环外侧 */
+.dir{font-size:14px;line-height:1.2;color:var(--ink-primary)}
+.dir small{font-size:10px;margin-top:3px;color:var(--ink-secondary)}
+.north{top:calc(6.8% - 12px);left:50%;transform:translate(-50%,0)}
+.south{top:auto;bottom:calc(6.8% - 30px);left:50%;transform:translate(-50%,0)}
+.west{left:auto;right:calc(93.2% + 6px);top:50%;transform:translateY(-12px)}
+.east{left:calc(93.2% + 6px);top:50%;transform:translateY(-12px)}
+.map-center:after{opacity:.28}
+.south{bottom:calc(6.8% - 22px)}
+
+@media (min-width:761px){
+/* ---- 18. 左栏对齐设计稿：宽 200、导航行高 63、分隔细线、常规宋体 ---- */
+.sidebar{width:200px;padding:12px 10px;background-color:#171c1c}
+.sidebar:before{opacity:.18}
+.app{margin-left:200px}
+.sidebar .brand-orbit{width:104px;height:104px;margin:14px auto 4px}
+.sidebar h1{font-size:26px;letter-spacing:.1em;margin-top:6px;font-weight:700}
+.sidebar .brand-sub{font-size:11.5px;gap:10px;margin:10px 0 26px;color:#d8ddd6}
+.sidebar nav button{font-family:var(--font-brand);font-weight:400;font-size:17px;letter-spacing:.06em;padding:0 22px!important;height:58px;gap:20px;color:#e9ece6}
+.sidebar nav button+button{margin-top:5px}
+.sidebar nav button:not(.on):after{content:"";position:absolute;left:10px;right:10px;bottom:-3px;height:1px;background:rgba(220,226,219,.07)}
+.sidebar nav .line-icon{width:28px;height:28px;stroke-width:1.3}
+.sidebar nav button.on{background:#9cb5b3;color:#0f1d1d;border-radius:4px}
+.sidebar nav button.on:after{right:-7px;border-left-color:#9cb5b3;border-top-width:6px;border-bottom-width:6px;border-left-width:7px}
+.sidebar .side-tools{margin-top:auto;padding-top:0;border-top:0}
+.sidebar .side-tools button{font-family:var(--font-brand);font-size:14.5px;height:50px;padding:0 22px;gap:22px;color:#dde1db}
+.sidebar .side-tools .line-icon{width:20px;height:20px;stroke-width:1.3}
+.sidebar .mountains{display:none}
+.sidebar blockquote{margin:22px 0 4px;padding:20px 12px 18px 22px;border-top:1px solid rgba(220,226,219,.09);font-family:var(--font-brand);font-size:13px;line-height:1.95;letter-spacing:.06em;color:#c9cfca}
+
+.framework-body{grid-template-columns:258px 1fr}
+.domains{padding:8px 10px 8px 10px}
+.domain{grid-template-columns:58px 1fr 16px;gap:12px;padding:18px 10px 18px 8px;min-height:90px}
+.domain>span{width:48px;height:48px;border-width:1.4px}
+.domain .line-icon{width:30px;height:30px;stroke-width:1.3}
+.domain b{font-size:18px;letter-spacing:.04em}
+.domain small{font-size:13px;line-height:1.7;margin-top:4px}
+.domain em{font-size:20px;color:var(--ink-primary)}
+.domain:not(.on) em{visibility:hidden}
+.domain.on{background-color:rgba(188,206,203,.55)}
+.domain-mountain{left:0;bottom:62px;width:248px;height:132px;background:url("visual/mountain-panorama.png") 8% bottom/560px auto no-repeat;filter:grayscale(1) contrast(1.15);opacity:.55;mask-image:linear-gradient(to bottom,transparent 0,#000 25%,#000 85%,transparent 100%)}
+.coordinates{left:20px;bottom:30px;font-size:12.5px;line-height:1.8;color:var(--ink-secondary)}
+
+}
+
+/* ---- 19. 常规/中等字重：设计稿正文为细宋，不应全用 700 ---- */
+@font-face{font-family:"Noto Serif SC Local";src:url("fonts/NotoSerifSC-400.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"Noto Serif SC Local";src:url("fonts/NotoSerifSC-500.woff2") format("woff2");font-weight:500;font-style:normal;font-display:swap}
+body{font-weight:400}
+.sidebar nav button,.sidebar .side-tools button,.sidebar blockquote{font-weight:400}
+.sidebar .brand-sub{font-family:var(--font-brand);font-weight:400}
+.domain b{font-weight:700}
+.domain small,.domain-heading p,.panel-title span,.lists li small,.timeline-list article p,.coordinates,.map-node small,.dir small{font-weight:400}
+.motto,.calendar{font-family:var(--font-brand);font-weight:400}
+.credo{font-weight:500;font-size:14px;letter-spacing:.12em}
+.tabs button,.tabs a{font-weight:400}
+.panel-actions button{font-weight:500}
+.lists li b,.timeline-list article div b{font-weight:500}
+.lists h4,.month b,.map-node b,.dir{font-weight:700}
+.activity-picks button span,.meta-row span{font-weight:400}
+
+/* ---- 20. 主色收深为墨青（设计稿按钮/中心圆实测 #0c4148 一带） ---- */
+:root{--deep-teal:#0c454b;--deep-teal-hover:#11535a}
+
+/* ---- 21. 原则 / 实践列表：字号放大、灰色计数胶囊、标题不折行 ---- */
+.lists h4{font-size:15px}
+.lists h4 i{display:inline-grid;place-items:center;min-width:24px;height:20px;padding:0 6px;border-radius:10px;background:rgba(200,196,184,.75);font-family:var(--font-brand);font-style:normal;font-size:12px;font-weight:400;margin-left:8px}
+.lists header button{font-size:13px;color:var(--ink-primary);font-weight:400}
+.lists li b{font-size:14.5px}
+.lists li small{font-size:12.5px;margin-top:3px}
+.lists li>span{width:22px;height:22px;font-size:12px}
+.lists label i{width:18px;height:18px}
+.lists li:has(label) div{padding-right:100px}
+.lists li:has(label) div b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.lists li:has(label) div small{right:14px;top:1px;font-size:12.5px}
+.lists li .li-more{font-style:normal;letter-spacing:-.05em;font-size:13px;color:var(--ink-primary)}
+
+/* ---- 22. 右栏：记一笔 / 时间线字号对齐 ---- */
+.activity-picks button{height:62px}
+.activity-picks button b svg,.activity-picks .line-icon{width:24px;height:24px}
+.activity-picks button span{font-size:12.5px}
+.quick textarea{min-height:80px;font-size:14px;padding:14px}
+.meta-row span{font-size:12.5px}
+.meta-row button{font-size:14px;padding:0 26px;height:36px}
+.month b{font-size:19px}
+.timeline-list time b{font-size:13.5px;font-weight:700}
+.timeline-list time small{font-size:12.5px;color:var(--ink-primary);font-family:var(--font-brand)}
+.evt-time{font-size:13px}
+.timeline-list article div b{font-size:14.5px}
+.timeline-list article p{font-size:12.5px}
+.evt-icon{width:28px;height:28px}
+.timeline-list article > button{font-size:13px;color:var(--ink-primary);letter-spacing:-.05em}
+.rightcol .panel-title > button{font-size:15px;letter-spacing:-.05em;color:var(--ink-primary)}
+.lists{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px}
+.lists section:first-child{padding-right:20px;border-right:1px dashed var(--rule-content)}
+.lists li{grid-template-columns:26px minmax(0,1fr) 22px;padding:10px 0}
+.lists li:has(label) div{padding-right:82px}
+.lists li:has(label) div b{font-size:13.5px;white-space:normal;overflow:visible}
+.lists li:has(label) div small{right:4px;font-size:12px}
+.lists section:first-child{padding-right:16px}
+.lists{gap:16px}
+.lists li:has(label){grid-template-columns:24px minmax(0,1fr) 16px;gap:6px}
+.lists li:has(label) div{padding-right:72px}
+.lists li:has(label) div b{font-size:13px;letter-spacing:0}
+.lists li:has(label) div small{font-size:11.5px}
+
+@media (min-width:761px){.lists{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+@media (max-width:760px){
+  .lists{grid-template-columns:1fr;gap:12px}
+  .lists section:first-child{padding-right:0;border-right:0}
+  .map-node{width:54px;height:54px;margin:-27px}
+  .map-node b{font-size:12px}.map-node small{font-size:8.5px}
+  .map-center b{font-size:15px}.map-center svg{height:32px}
+  .dir{font-size:12px}
+}
+.lists section header,.lists h4,.lists header button{white-space:nowrap}
+.lists h4 i{margin-left:6px}
+
+/* ---- 23. 宣纸色调：设计稿实测页面 #e7e3d4、面板 #e7e1d2，偏冷灰，不发黄 ---- */
+:root{--paper-base:#e6e2d4;--paper-raised:rgba(236,232,221,.72)}
+body{background-image:linear-gradient(rgba(236,234,226,.38),rgba(230,227,216,.3)),var(--paper-image);filter:none}
+.masthead,.panel{background-image:linear-gradient(rgba(240,237,228,.5),rgba(232,228,217,.42)),var(--paper-image)}
+
+/* ---- 24. 品牌星图：对齐设计稿（外环 + 透镜弧 + 横椭圆 + 内虚环 + 四星 + 大核心） ---- */
+.brand-orbit{overflow:visible}
+.brand-orbit *{vector-effect:non-scaling-stroke}
+.brand-orbit .outer{fill:none;stroke:#e9e5da;stroke-width:1.3}
+.brand-orbit .axes{fill:none;stroke:rgba(233,229,218,.62);stroke-width:.8;stroke-dasharray:3 2.2}
+.brand-orbit .spokes{fill:none;stroke:rgba(233,229,218,.55);stroke-width:.8}
+.brand-orbit .lens{fill:none;stroke:rgba(233,229,218,.5);stroke-width:.8}
+.brand-orbit .orbit-mid{fill:none;stroke:rgba(233,229,218,.6);stroke-width:.85;stroke-dasharray:4 2.4}
+.brand-orbit .stars circle{fill:#efebe0;stroke:none}
+.brand-orbit .core{fill:#e9e4d6;stroke:none;filter:drop-shadow(0 0 3px rgba(240,236,224,.35))}
+.brand-orbit .web,.brand-orbit .orbit-inner,.brand-orbit .core-halo{display:none}
+
+/* ---- 25. 新图标：领域图标自带外圈，span 去掉边框 ---- */
+.domain>span{border:0!important;background:transparent}
+.domain>span .line-icon{width:44px;height:44px;stroke-width:1.15}
+.domain.on>span{width:48px;height:48px;border-radius:50%;background:#b44a37!important;color:#f4ece0}
+.domain.on>span .line-icon{width:40px;height:40px;stroke:#f4ece0}
+.sidebar nav .line-icon{width:27px;height:27px;stroke-width:1.25}
+.sidebar .side-tools .line-icon{width:19px;height:19px;stroke-width:1.3}
+.evt-icon .line-icon{width:19px;height:19px;stroke-width:1.35}
+
+/* ---- 26. 山水与坐标不再重叠：山水整体上移，坐标落在其下方的留白里 ---- */
+.domain-mountain{bottom:96px;height:120px;mask-image:linear-gradient(to bottom,transparent 0,#000 28%,#000 70%,transparent 100%)}
+.coordinates{bottom:22px;cursor:pointer;background:none}
+.coordinates:hover{color:var(--ink-primary)}
+.sidebar nav button .line-icon{width:28px;height:28px;stroke-width:1.25}
+.sidebar .side-tools button .line-icon{width:20px;height:20px}
+.sidebar .brand-orbit{width:112px;height:112px}
+
+/* ---- 27. 节点操作：悬停或点按（focus）都显示，按钮放大到 20px 便于点击 ---- */
+.map-node:focus-within .node-ops,.map-node:focus .node-ops{display:flex}
+.map-node .node-ops{top:-6px;right:-6px}
+.node-ops i{width:20px;height:20px;font-size:12px}
+.node-ops i svg{width:10px;height:10px}
+@media (hover:none){.map-node .node-ops{display:flex;opacity:.85}}
+
+/* ---- 28. 顶部格言 / 眉批 / 历法：回到霞鹜文楷（参考 v4 原版） ---- */
+.masthead .motto,.masthead .credo,.masthead .calendar{font-family:"LXGW WenKai Local","LXGW WenKai","霞鹜文楷",cursive}
+.masthead .motto{font-weight:400;font-size:16px;line-height:1.85;letter-spacing:.14em;color:var(--ink-primary)}
+.masthead .credo{font-weight:700;font-size:14.5px;letter-spacing:.16em;color:var(--ink-primary);-webkit-text-stroke:.25px currentColor}
+.masthead .calendar{font-weight:400;font-size:13px;line-height:1.95;letter-spacing:.04em;color:var(--ink-primary)}
+
+/* ---- 29. 宣纸感：向 v4 原版靠拢——更暖的米色底、纤维纹理更显、四角轻微压暗、面板半透明透出纸纹 ---- */
+:root{--paper-base:#e9e1d0;--paper-raised:rgba(242,236,224,.6)}
+body{
+  background-image:
+    linear-gradient(rgba(246,240,228,.22),rgba(232,224,208,.18)),
+    var(--paper-image);
+  background-size:auto,560px 560px;
+  background-blend-mode:normal,multiply;
+}
+body:before{display:block;background:radial-gradient(125% 95% at 50% 42%,transparent 58%,rgba(92,74,42,.09) 100%)}
+.masthead,.panel{
+  background-color:rgba(240,233,219,.55);
+  background-image:linear-gradient(rgba(250,246,236,.26),rgba(236,228,212,.2)),var(--paper-image);
+  background-size:auto,620px 620px;
+  background-blend-mode:normal,multiply;
+}
+
+/* ---- 30. 顶部字体按参考版对齐：格言 / 历法用文楷，眉批用宋体加粗 ---- */
+.masthead .motto{font-size:15px;line-height:1.65;letter-spacing:.11em}
+.masthead .credo{font-family:var(--font-brand);font-weight:700;font-size:12.5px;letter-spacing:.14em;-webkit-text-stroke:0}
+.masthead .calendar{font-size:11px;line-height:1.8;letter-spacing:.025em}
+
+/* ============================================================
+   31. 纸面主题（可切换）—— html[data-paper] 决定
+   每款只改：纸色 / 纸纹强度 / 暗角 / 面板透明度 / 额外肌理
+   印章红、墨青、字体、版式全部不动，保证换背景不换气质
+   ============================================================ */
+html{--pp-wash-a:rgba(246,240,228,.22);--pp-wash-b:rgba(232,224,208,.18);--pp-size:560px;--pp-vig:rgba(92,74,42,.09);
+     --pp-panel:rgba(240,233,219,.55);--pp-panel-a:rgba(250,246,236,.26);--pp-panel-b:rgba(236,228,212,.2);--pp-extra:none;--pp-extra-op:0;--pp-extra-size:auto}
+body{background-color:var(--paper-base);background-image:linear-gradient(var(--pp-wash-a),var(--pp-wash-b)),var(--paper-image);background-size:auto,var(--pp-size) var(--pp-size)}
+body:before{background:radial-gradient(125% 95% at 50% 42%,transparent 58%,var(--pp-vig) 100%)}
+.masthead,.panel{background-color:var(--pp-panel);background-image:linear-gradient(var(--pp-panel-a),var(--pp-panel-b)),var(--paper-image)}
+/* 额外肌理层：帘纹 / 山水水印等，垫在内容下面 */
+body:after{content:"";display:block!important;position:fixed;inset:0;z-index:0;pointer-events:none;background:var(--pp-extra);background-size:var(--pp-extra-size);opacity:var(--pp-extra-op);mix-blend-mode:multiply}
+.app{position:relative;z-index:1}
+
+/* 1. 暖宣（默认，当前这版） */
+html[data-paper="warm"]{--paper-base:#e9e1d0;--paper-raised:rgba(242,236,224,.6)}
+
+/* 2. 素宣（上一版：偏冷灰，贴近设计稿） */
+html[data-paper="plain"]{--paper-base:#e6e2d4;--paper-raised:rgba(236,232,221,.72);
+  --pp-wash-a:rgba(236,234,226,.38);--pp-wash-b:rgba(230,227,216,.3);--pp-size:610px;--pp-vig:rgba(72,60,34,.05);
+  --pp-panel:rgba(236,232,221,.72);--pp-panel-a:rgba(240,237,228,.5);--pp-panel-b:rgba(232,228,217,.42)}
+
+/* 3. 竹帘纸：浅竹黄，横向帘纹 + 稀疏竖向链线 */
+html[data-paper="bamboo"]{--paper-base:#e8dfc4;--paper-raised:rgba(240,232,212,.6);
+  --pp-wash-a:rgba(244,236,214,.24);--pp-wash-b:rgba(228,216,188,.2);--pp-size:520px;--pp-vig:rgba(96,78,36,.1);
+  --pp-panel:rgba(239,231,210,.58);--pp-panel-a:rgba(248,242,224,.24);--pp-panel-b:rgba(232,222,196,.2);
+  --pp-extra:repeating-linear-gradient(0deg,rgba(110,92,52,.07) 0 1px,transparent 1px 3px),repeating-linear-gradient(90deg,rgba(110,92,52,.09) 0 1px,transparent 1px 34px);--pp-extra-op:1}
+
+/* 4. 青瓷笺：极淡的青灰纸，和墨青主色同调 */
+html[data-paper="celadon"]{--paper-base:#dfe3da;--paper-raised:rgba(230,234,226,.62);
+  --pp-wash-a:rgba(232,238,230,.42);--pp-wash-b:rgba(214,222,212,.34);--pp-size:600px;--pp-vig:rgba(30,58,54,.09);
+  --pp-panel:rgba(232,236,228,.6);--pp-panel-a:rgba(242,246,240,.32);--pp-panel-b:rgba(222,228,218,.26)}
+
+/* 5. 古卷：深一档的旧纸，边缘焦黄、四角更沉 */
+html[data-paper="aged"]{--paper-base:#ddcfae;--paper-raised:rgba(234,222,194,.55);
+  --pp-wash-a:rgba(238,226,196,.14);--pp-wash-b:rgba(214,196,156,.16);--pp-size:480px;--pp-vig:rgba(110,74,24,.2);
+  --pp-panel:rgba(236,224,196,.5);--pp-panel-a:rgba(244,234,208,.2);--pp-panel-b:rgba(224,208,172,.2);
+  --pp-extra:radial-gradient(60% 45% at 12% 8%,rgba(150,104,40,.1),transparent 70%),radial-gradient(55% 40% at 92% 96%,rgba(150,104,40,.12),transparent 70%);--pp-extra-op:1}
+
+/* 6. 山水笺：素宣底 + 极淡的远山水印 */
+html[data-paper="landscape"]{--paper-base:#e7e2d3;--paper-raised:rgba(238,233,221,.66);
+  --pp-wash-a:rgba(240,236,226,.32);--pp-wash-b:rgba(230,225,212,.26);--pp-size:600px;--pp-vig:rgba(72,60,34,.07);
+  --pp-panel:rgba(238,233,221,.62);--pp-panel-a:rgba(246,242,233,.34);--pp-panel-b:rgba(234,229,216,.28);
+  --pp-extra:url("visual/mountain-panorama.png") center 100%/1500px auto no-repeat;--pp-extra-op:.38}
+
+/* 切换时柔和过渡 */
+body,.masthead,.panel{transition:background-color .5s ease}
+
+/* 太阳按钮 = 快速切换 */
+.masthead .sun{cursor:pointer;border-radius:50%;transition:transform .4s ease}
+.masthead .sun:hover{transform:rotate(30deg)}
+.masthead .sun:focus-visible{outline:2px solid var(--deep-teal);outline-offset:3px}
+
+/* 设置弹窗里的纸样 */
+.paper-picker{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:2px 0 12px}
+.paper-picker button{display:flex;flex-direction:column;align-items:stretch;gap:6px;padding:6px!important;border:1px solid var(--rule-content)!important;border-radius:4px;background:transparent;cursor:pointer;font-family:var(--font-brand);font-size:12px;color:var(--ink-primary)}
+.paper-picker button i{display:block;height:46px;border-radius:2px;border:1px solid rgba(20,33,31,.14);background-size:cover}
+.paper-picker button[aria-checked="true"]{border-color:var(--deep-teal)!important;box-shadow:0 0 0 1px var(--deep-teal)}
+.paper-picker button:focus-visible{outline:2px solid var(--deep-teal);outline-offset:2px}
+.paper-picker small{display:block;font-size:10.5px;color:var(--ink-secondary);font-weight:400;line-height:1.3}
+.setting-title{font-family:var(--font-brand);font-size:13px;margin:0 0 8px;color:var(--ink-primary)}
+.modal-card{width:420px}
+
+/* 31b. 竹帘纸：帘纹更细更淡，链线更稀，避免像网格 */
+html[data-paper="bamboo"]{--pp-extra:repeating-linear-gradient(0deg,rgba(110,92,52,.045) 0 1px,transparent 1px 2.5px),repeating-linear-gradient(90deg,rgba(110,92,52,.06) 0 1px,transparent 1px 46px)}
+
+/* 31c. 山水笺：水印改到面板里（面板会盖住页面底），只在大面板底部淡淡出现 */
+html[data-paper="landscape"]{--pp-extra:none;--pp-extra-op:0}
+html[data-paper="landscape"] .framework,
+html[data-paper="landscape"] .timeline{position:relative;isolation:isolate}
+html[data-paper="landscape"] .framework:before,
+html[data-paper="landscape"] .timeline:before{content:"";position:absolute;left:0;right:0;bottom:0;height:46%;z-index:-1;pointer-events:none;
+  background:url("visual/mountain-panorama.png") center bottom/auto 100% no-repeat;mix-blend-mode:multiply;opacity:.3;
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 45%);mask-image:linear-gradient(to bottom,transparent 0,#000 45%)}
+html[data-paper="landscape"] .timeline:before{height:38%;background-position:right bottom;opacity:.26}
+html[data-paper="landscape"] .domain-mountain{opacity:.25}
+.masthead .sun{border-radius:0;transform:none!important}
+.masthead .sun svg{transition:transform .4s ease}
+.masthead .sun:hover svg{transform:rotate(30deg)}
+.masthead .sun:focus-visible{outline-offset:-4px}
+
+/* ---- 32. 本机存储状态角标 ---- */
+.store-badge{position:fixed;right:14px;bottom:10px;z-index:150;padding:4px 10px;border:1px solid var(--rule-content);border-radius:3px;background:rgba(244,239,228,.88);font-family:var(--font-brand);font-size:11.5px;letter-spacing:.04em;color:var(--ink-secondary);pointer-events:auto;backdrop-filter:blur(2px)}
+.store-badge[data-state="saving"]{color:var(--deep-teal)}
+.store-badge[data-state="error"]{color:var(--cinnabar);border-color:rgba(176,73,52,.45)}
+.store-badge[data-state="browser"]{color:var(--cinnabar)}
+@media (max-width:760px){.store-badge{bottom:76px;right:10px}}

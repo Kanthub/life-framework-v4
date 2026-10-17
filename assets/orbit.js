@@ -4,7 +4,7 @@
      每种样式把这段「标准半径」映射到自己的轨道上，所以切换样式不会改写数据
    - 节点按所在轨道公转，内快外慢；鼠标压在节点上时减速停下，方便点击（指针静止几秒后自动恢复）
    - 拖动节点到新位置，靠近轨道时自动吸附；松手即保存
-   - 样式选择存在 localStorage「kongwo-compass-style」 */
+   - 样式选择存在 localStorage「kongwo-compass-style」，转速档位存在「kongwo-compass-speed」 */
 (function () {
   var map = document.getElementById('lifeMap');
   var box = document.getElementById('mapNodes');
@@ -17,6 +17,8 @@
   var SLOW = 3;                         // 设计稿里的转速是演示用的，实际放慢 3 倍
   var PHASE_KEY = 'kongwo-orbit';
   var STYLE_KEY = 'kongwo-compass-style';
+  var SPEED_KEY = 'kongwo-compass-speed';
+  var RATES = [['slow', '慢', .5], ['mid', '中', 1], ['fast', '快', 2], ['stop', '停', 0]];   // 公转转速档位：键、字、倍率
   var NS = 'http://www.w3.org/2000/svg';
   var INK = '#14211f', TEAL = '#07575a', RED = '#b64b35', PAPER = '#f0ebdf';
 
@@ -24,6 +26,8 @@
   var clock = parseFloat(localStorage.getItem(PHASE_KEY));        // 公转时钟（秒）
   if (!isFinite(clock) || clock < 0) clock = 0;
   var speed = reduce.matches ? 0 : 1;                             // 0..1，悬停时缓停
+  var rate = 1, rateKey = 'mid';                                  // 用户选的转速档位（倍率乘在 speed 上）
+  try { RATES.forEach(function (q) { if (q[0] === localStorage.getItem(SPEED_KEY)) { rateKey = q[0]; rate = q[2]; } }); } catch (e) {}
   var drag = null, justDragged = false;
 
   /* ———— 三种样式的几何：knots 把标准半径映射到设计稿半径；orbits 为可吸附的轨道 ———— */
@@ -223,7 +227,9 @@
     decorate();
   }
 
-  /* ———— 样式切换控件（罗盘右侧竖排：甲 乙 丙） ———— */
+  /* ———— 罗盘右侧靠下的竖排停靠栏：样式切换（甲 乙 丙）+ 转速（慢 中 快 停） ———— */
+  var dock = map.querySelector('.compass-dock');
+  if (!dock) { dock = document.createElement('div'); dock.className = 'compass-dock'; map.appendChild(dock); }
   var switcher = map.querySelector('.compass-switch');
   if (!switcher) {
     switcher = document.createElement('div');
@@ -233,8 +239,39 @@
     switcher.innerHTML = ORDER.map(function (k, i) {
       return '<button type="button" role="radio" data-compass="' + k + '" title="' + '甲乙丙'[i] + ' · ' + STYLES[k].name + '"><b>' + '甲乙丙'[i] + '</b><small>' + STYLES[k].name.slice(0, 2) + '</small></button>';
     }).join('');
-    map.appendChild(switcher);
   }
+  dock.appendChild(switcher);
+  var speeder = document.createElement('div');
+  speeder.className = 'compass-speed';
+  speeder.setAttribute('role', 'radiogroup');
+  speeder.setAttribute('aria-label', '公转转速');
+  speeder.innerHTML = '<i aria-hidden="true">转速</i>' + RATES.map(function (q) {
+    return '<button type="button" role="radio" data-rate="' + q[0] + '" title="公转转速 · ' + (q[2] ? q[1] : '暂停') + '">' + q[1] + '</button>';
+  }).join('');
+  dock.appendChild(speeder);
+  function markRate() {
+    speeder.querySelectorAll('[data-rate]').forEach(function (b) {
+      var on = b.dataset.rate === rateKey;
+      b.setAttribute('aria-checked', on ? 'true' : 'false');
+      b.tabIndex = on ? 0 : -1;
+    });
+  }
+  function setRate(key) {
+    RATES.forEach(function (q) { if (q[0] === key) { rateKey = key; rate = q[2]; } });
+    try { localStorage.setItem(SPEED_KEY, rateKey); } catch (e) {}
+    markRate();
+  }
+  markRate();
+  speeder.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-rate]'); if (b) setRate(b.dataset.rate);
+  });
+  speeder.addEventListener('keydown', function (e) {
+    var step = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 }[e.key]; if (!step) return;
+    e.preventDefault();
+    var i = (RATES.map(function (q) { return q[0]; }).indexOf(rateKey) + step + RATES.length) % RATES.length;
+    setRate(RATES[i][0]);
+    speeder.querySelector('[data-rate="' + rateKey + '"]').focus();
+  });
   switcher.addEventListener('click', function (e) {
     var b = e.target.closest('[data-compass]'); if (b) setStyle(b.dataset.compass);
   });
@@ -351,7 +388,8 @@
     try {
       speed += ((paused(now) ? 0 : 1) - speed) * Math.min(1, dt * 3);
       if (!(speed >= 0 && speed <= 1)) speed = 0;
-      if (speed > .001) { clock += speed * dt; layout(); }
+      // speed 管悬停缓停（0..1），rate 是用户选的档位；「停」时 rate=0，时钟不走、节点和底图都不动
+      if (speed * rate > .001) { clock += speed * rate * dt; layout(); }
     } catch (err) {
       if (!failed) { failed = true; console.error('[orbit] tick', err); }
     }

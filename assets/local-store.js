@@ -3,7 +3,7 @@
    - 直接双击 index.html 打开时：没有服务器，照旧只存浏览器，并在页面角落提示
    app.js 仍然用 localStorage 读写，这里只负责“镜像到文件”，不改动业务代码 */
 (function () {
-  var KEYS = ['lf4-domains', 'kongwo-records', 'kongwo-paper', 'kongwo-geo', 'kongwo-cards', 'kongwo-fw-v', 'kongwo-compass-style'];
+  var KEYS = ['lf4-domains', 'kongwo-records', 'kongwo-paper', 'kongwo-geo', 'kongwo-cards', 'kongwo-fw-v', 'kongwo-compass-style', 'kongwo-compass-speed'];
   var API = '/api/data';
   var SYNC_MARK = 'kongwo-file-synced';   // 标记：这个浏览器已经和数据文件同步过
 

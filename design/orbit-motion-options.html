@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<title>节点运行模式设计稿 · 五选一</title>
+<style>
+@font-face{font-family:NS;font-weight:500;src:url(../assets/fonts/NotoSerifSC-500.woff2)}
+@font-face{font-family:NS;font-weight:700;src:url(../assets/fonts/NotoSerifSC-700.woff2)}
+:root{--paper:#f0ebdf;--ink:#14211f;--teal:#07575a;--red:#b64b35;--mut:#626964}
+body{margin:0;background:#f0ebdf url(../assets/visual/xuan-paper.png);color:var(--ink);font-family:NS,serif}
+header{padding:26px 40px 4px;display:flex;align-items:flex-end;gap:32px;flex-wrap:wrap}
+header div{flex:1 1 520px}
+h1{font-size:26px;margin:0;letter-spacing:.06em}
+header p{color:var(--mut);margin:6px 0 0;font-size:14px;line-height:1.7}
+.ctl{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--mut);border:1px solid rgba(20,33,31,.3);border-radius:3px;padding:8px 14px;background:rgba(244,239,228,.6)}
+.ctl b{color:var(--ink);font-size:13px;min-width:3.6em}
+.ctl input{width:180px;accent-color:var(--teal)}
+.ctl button{all:unset;cursor:pointer;border:1px solid rgba(20,33,31,.35);border-radius:2px;padding:2px 10px;color:var(--ink)}
+.ctl button:hover{background:rgba(7,87,90,.08)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:28px 32px;padding:16px 40px 40px}
+figure{margin:0;border-top:1px solid rgba(20,33,31,.45);padding-top:14px}
+figcaption h2{font-size:21px;margin:0 0 4px;letter-spacing:.05em}
+figcaption h2 span{color:var(--red);margin-right:8px}
+figcaption h2 em{font-style:normal;font-size:13px;color:var(--mut);font-weight:500;margin-left:8px;letter-spacing:.02em}
+figcaption p{font-size:13px;line-height:1.8;color:var(--mut);margin:0 0 4px}
+figcaption p i{font-style:normal;color:var(--ink);font-weight:700;margin-right:4px}
+svg{width:100%;aspect-ratio:1;display:block;margin:8px 0 10px;overflow:visible}
+svg text{font-family:NS,serif}
+.note{grid-column:span 1;align-self:start;border-top:1px dashed rgba(20,33,31,.35);padding-top:14px;font-size:13px;line-height:1.9;color:var(--mut)}
+.note h3{font-size:16px;color:var(--ink);margin:0 0 6px;letter-spacing:.05em}
+@media (max-width:1100px){.grid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:700px){.grid{grid-template-columns:1fr;padding:16px 20px}header{padding:20px}}
+</style>
+<header>
+  <div>
+    <h1>节点运行模式 · 五选一</h1>
+    <p>现在三颗节点同速同向地转。下面五种模式各给节点一种「性格」，图中都在实时运行，鼠标移到某一张图上它会停下。只是设计稿，主程序还没有接入。</p>
+  </div>
+  <label class="ctl">转速 <input id="rate" type="range" min="0" max="3" step="0.05" value="1"><b id="rateOut">×1.00</b><button id="pause" type="button">暂停</button></label>
+</header>
+<div class="grid">
+  <figure data-mode="breath"><svg viewBox="-262 -262 524 524"></svg><figcaption>
+    <h2><span>壹</span>呼吸<em>一进一出</em></h2>
+    <p><i>视觉</i>节点一边慢慢公转，一边沿半径向里收、向外放，像整盘在呼吸；节点依次起伏，形成一道向外的波。中心有一圈淡青的「气环」跟着胀缩，底部标出此刻是吸还是呼。</p>
+    <p><i>运动</i>半径 = 轨道 ± 20，周期 8 秒（吸 4 呼 4，按正弦缓入缓出），相邻节点相位差约 40°；公转很慢，一圈约两分钟。</p>
+    <p><i>心境</i>调息、静坐、休整期。最安静，适合长时间挂着不看。</p>
+  </figcaption></figure>
+  <figure data-mode="kepler"><svg viewBox="-262 -262 524 524"></svg><figcaption>
+    <h2><span>贰</span>星轨<em>各安其位</em></h2>
+    <p><i>视觉</i>每颗节点在自己的轨道上，像行星：内圈快、外圈慢，按开普勒第三定律（周期 ∝ 半径<sup>1.5</sup>）。每颗身后拖一段墨色星轨，越往后越淡。</p>
+    <p><i>运动</i>四条半径（96 / 128 / 160 / 192）各走各的速度，节点之间相对位置一直在变，偶尔会排成一线（「合」），见图中红色虚线。</p>
+    <p><i>心境</i>多线并进、各有节奏。最「天文」，能看出哪件事离中心近。</p>
+  </figcaption></figure>
+  <figure data-mode="tide"><svg viewBox="-262 -262 524 524"></svg><figcaption>
+    <h2><span>叁</span>潮汐<em>张弛有度</em></h2>
+    <p><i>视觉</i>整盘转速随时间慢慢涨落：涨潮时一起加速，退潮时缓缓减速到几乎停住，再重新起势。外圈一枚小月亮绕行标出潮相，盘面一层淡青水色随潮涨变深。</p>
+    <p><i>运动</i>角速度 = 基准 ×（0.12 ～ 1.6）之间按 30 秒一周的正弦起伏；节点仍同轨同向，只是快慢在变。</p>
+    <p><i>心境</i>接受起伏，有冲刺也有停顿。和现在的观感最接近，过渡最自然。</p>
+  </figcaption></figure>
+  <figure data-mode="duet"><svg viewBox="-262 -262 524 524"></svg><figcaption>
+    <h2><span>肆</span>阴阳对转<em>一顺一逆</em></h2>
+    <p><i>视觉</i>两条轨道：内圈为阳（纸色节点，顺时针），外圈为阴（青色节点，逆时针）。中心太极随内圈慢转。阴阳两颗节点在同一方向上相遇时，之间亮起一道朱砂细线（交会），随后分开。</p>
+    <p><i>运动</i>相邻节点交替分到两条轨道、方向相反，同速；相遇判定为角度差 &lt; 10°。</p>
+    <p><i>心境</i>平衡、取舍、对立中的互补。最有「太极」意味。</p>
+  </figcaption></figure>
+  <figure data-mode="pendulum"><svg viewBox="-262 -262 524 524"></svg><figcaption>
+    <h2><span>伍</span>摆荡<em>傅科摆</em></h2>
+    <p><i>视觉</i>节点不再绕圈，而是在各自「本位」左右往复摆动，像钟摆；每颗节点有一根细细的摆杆连到中心，摆幅用一段淡弧标出。所有本位又极慢地整体漂移，像傅科摆的摆面随地球转动。</p>
+    <p><i>运动</i>角度 = 本位 ± 28°，周期 6 秒，各节点相位错开；本位每分钟漂移约 6°。节点始终停在自己的方位附近，最容易点中。</p>
+    <p><i>心境</i>专注、守中、不离本位。适合需要频繁点击节点的时候。</p>
+  </figcaption></figure>
+  <div class="note">
+    <h3>选定之后怎么接</h3>
+    <p>五种模式都只改「节点此刻的角度与半径」，拖动定位、吸附轨道、悬停停下、转速档位（慢 / 中 / 快 / 停）都能沿用。也可以组合，例如「潮汐 + 阴阳对转」。</p>
+    <p>呼吸、摆荡两种节点会偏离保存的位置一段距离，拖动吸附时以「本位」为准。</p>
+  </div>
+</div>
+<script>
+var NS = 'http://www.w3.org/2000/svg';
+var NODES = [['饮食', '热量'], ['训练', '身体重塑'], ['生活管理', '作息'], ['睡眠', '恢复']];
+var INK = '#14211f', TEAL = '#07575a', RED = '#b64b35', PAPER = '#f0ebdf';
+function el(tag, at, p) { var e = document.createElementNS(NS, tag); for (var k in at) e.setAttribute(k, at[k]); if (p) p.appendChild(e); return e; }
+function txt(p, s, at) { var t = el('text', Object.assign({ 'text-anchor': 'middle' }, at), p); t.textContent = s; return t; }
+function rad(a) { return (a - 90) * Math.PI / 180; }           // 0 = 上，顺时针
+function pt(a, r) { return [Math.cos(rad(a)) * r, Math.sin(rad(a)) * r]; }
+function norm(a) { return (a % 360 + 360) % 360; }
+function taiji(p, R, dark, light) {
+  var g = el('g', {}, p);
+  el('circle', { r: R, fill: light }, g);
+  el('path', { d: 'M0,' + -R + 'A' + R + ' ' + R + ' 0 0 1 0,' + R + 'A' + R / 2 + ' ' + R / 2 + ' 0 0 1 0,0A' + R / 2 + ' ' + R / 2 + ' 0 0 0 0,' + -R + 'Z', fill: dark }, g);
+  el('circle', { cy: -R / 2, r: R / 7, fill: dark }, g);
+  el('circle', { cy: R / 2, r: R / 7, fill: light }, g);
+  return g;
+}
+function defs(svg, id) {
+  var d = el('defs', {}, svg);
+  var g = el('radialGradient', { id: id + 'pl', cx: '.36', cy: '.3', r: '.75' }, d);
+  el('stop', { offset: '0', 'stop-color': '#fffdf8' }, g); el('stop', { offset: '.6', 'stop-color': '#efe9dc' }, g); el('stop', { offset: '1', 'stop-color': '#ddd4c0' }, g);
+  var y = el('radialGradient', { id: id + 'yin', cx: '.36', cy: '.3', r: '.75' }, d);
+  el('stop', { offset: '0', 'stop-color': '#3d7f7d' }, y); el('stop', { offset: '1', 'stop-color': '#0b3d3e' }, y);
+}
+// 罗盘底：外圈刻度 + 四方位
+function base(s, rings, dash) {
+  el('circle', { r: 226, fill: 'none', stroke: INK, 'stroke-opacity': .7 }, s);
+  for (var i = 0; i < 72; i++) {
+    var a = i * 5, L = i % 3 ? 5 : 10, o = pt(a, 226), q = pt(a, 226 - L);
+    el('line', { x1: o[0], y1: o[1], x2: q[0], y2: q[1], stroke: INK, 'stroke-opacity': i % 3 ? .3 : .65 }, s);
+  }
+  [['上', 0], ['守', 90], ['下', 180], ['进', 270]].forEach(function (d) { var q = pt(d[1], 245); txt(s, d[0], { x: q[0], y: q[1] + 5, 'font-size': 15, 'font-weight': 700, fill: INK }); });
+  (rings || []).forEach(function (r, i) { el('circle', { r: r, fill: 'none', stroke: i % 2 ? TEAL : INK, 'stroke-opacity': .32, 'stroke-dasharray': dash ? dash[i] : 'none' }, s); });
+}
+function planet(p, id, n, yin) {
+  var g = el('g', {}, p);
+  el('circle', { r: 31, fill: PAPER, opacity: .75 }, g);
+  el('circle', { r: 27, fill: 'url(#' + id + (yin ? 'yin' : 'pl') + ')', stroke: INK, 'stroke-opacity': .55 }, g);
+  txt(g, n[0], { y: 1, 'font-size': n[0].length > 2 ? 11 : 13, 'font-weight': 700, fill: yin ? '#f4efe3' : INK });
+  txt(g, n[1], { y: 12, 'font-size': 7.5, fill: yin ? '#cfe0dc' : '#626964' });
+  return g;
+}
+function put(g, a, r, k) { var q = pt(a, r); g.setAttribute('transform', 'translate(' + q[0].toFixed(1) + ' ' + q[1].toFixed(1) + ')' + (k ? ' scale(' + k.toFixed(3) + ')' : '')); return q; }
+function rot(g, deg) { g.setAttribute('transform', 'rotate(' + deg.toFixed(2) + ')'); }
+function centre(s, id) {
+  el('circle', { r: 50, fill: PAPER, stroke: INK, 'stroke-opacity': .55 }, s);
+  var tj = taiji(s, 46, TEAL, '#f6f2e8');
+  return tj;
+}
+
+/* ———— 五种模式：build(svg, id) 返回 frame(t)，t 为该图自己的时钟（秒，已乘转速） ———— */
+var MODES = {
+  // 壹 呼吸：半径正弦起伏，相邻节点相位错开，形成向外的波；气环随之胀缩
+  breath: function (s, id) {
+    var R0 = 140, AMP = 20, BREATH = 8;
+    base(s, [R0 - AMP, R0 + AMP], ['2 5', '2 5']);
+    var qi = el('circle', { r: 70, fill: TEAL, 'fill-opacity': .06, stroke: TEAL, 'stroke-opacity': .25, 'stroke-width': 6 }, s);
+    var tj = centre(s, id);
+    var lab = txt(s, '吸', { y: 196, 'font-size': 13, fill: TEAL, 'letter-spacing': '.2em' });
+    var ps = NODES.map(function (n) { return planet(s, id, n); });
+    return function (t) {
+      var w = 2 * Math.PI * t / BREATH, rev = t * 360 / 120;
+      rot(tj, t * 3);
+      qi.setAttribute('r', (64 + 12 * Math.sin(w)).toFixed(1));
+      lab.textContent = Math.cos(w) >= 0 ? '· 吸 ·' : '· 呼 ·';
+      ps.forEach(function (g, i) {
+        var ph = Math.sin(w - i * .7);
+        put(g, i * 90 + 30 + rev, R0 + AMP * ph, 1 + .05 * ph);
+      });
+    };
+  },
+  // 贰 星轨：开普勒 T ∝ r^1.5，各节点拖墨色尾迹；任意两颗角度差 < 4° 时连一道「合」线
+  kepler: function (s, id) {
+    var RS = [96, 128, 160, 192], T0 = 24;
+    base(s, RS, ['3 4', 'none', '1 5', 'none']);
+    var trails = el('g', {}, s), conj = el('g', {}, s);
+    var tj = centre(s, id);
+    var tr = RS.map(function (r) {
+      var arcs = [];
+      for (var k = 0; k < 6; k++) arcs.push(el('circle', { r: r, fill: 'none', stroke: TEAL, 'stroke-width': 2.4, 'stroke-linecap': 'round', 'stroke-opacity': (.38 * (1 - k / 6)).toFixed(2) }, trails));
+      return arcs;
+    });
+    var ps = NODES.map(function (n) { return planet(s, id, n); });
+    return function (t) {
+      rot(tj, t * 4);
+      var as = RS.map(function (r, i) { return norm(i * 97 + 20 + t * 360 / (T0 * Math.pow(r / RS[0], 1.5))); });
+      ps.forEach(function (g, i) {
+        put(g, as[i], RS[i]);
+        var C = 2 * Math.PI * RS[i], seg = C * 8 / 360;
+        tr[i].forEach(function (c, k) {
+          c.setAttribute('stroke-dasharray', seg.toFixed(1) + ' ' + C.toFixed(1));
+          c.setAttribute('transform', 'rotate(' + (as[i] - 90 - 14 - (k + 1) * 8).toFixed(2) + ')');
+        });
+      });
+      conj.textContent = '';
+      for (var i = 0; i < as.length; i++) for (var j = i + 1; j < as.length; j++) {
+        var d = Math.abs(norm(as[i] - as[j] + 180) - 180);
+        if (d < 4) { var o = pt(as[i], 52), q = pt(as[j], RS[j] + 30); el('line', { x1: o[0], y1: o[1], x2: q[0], y2: q[1], stroke: RED, 'stroke-opacity': (.6 * (1 - d / 4)).toFixed(2), 'stroke-dasharray': '3 3' }, conj); }
+      }
+    };
+  },
+  // 叁 潮汐：角速度按 30 秒一周正弦涨落；外圈小月亮标潮相，盘面水色随潮深浅
+  tide: function (s, id) {
+    var RS = [112, 150, 188], P = 30, LO = .12, HI = 1.6, BASE = 360 / 70;
+    var water = el('circle', { r: 212, fill: TEAL, 'fill-opacity': 0 }, s);
+    base(s, RS, ['3 4', 'none', '1 5']);
+    var moonTrack = el('circle', { r: 212, fill: 'none', stroke: INK, 'stroke-opacity': .12, 'stroke-dasharray': '1 6' }, s);
+    var moon = el('g', {}, s);
+    el('circle', { r: 8, fill: '#f6f2e8', stroke: INK, 'stroke-opacity': .6 }, moon);
+    var moonShade = el('circle', { r: 8, fill: TEAL, 'fill-opacity': .55 }, moon);
+    var tj = centre(s, id);
+    var lab = txt(s, '', { y: 196, 'font-size': 13, fill: TEAL, 'letter-spacing': '.2em' });
+    var ps = NODES.slice(0, 3).map(function (n) { return planet(s, id, n); });
+    var mid = (LO + HI) / 2, amp = (HI - LO) / 2;
+    return function (t) {
+      var w = 2 * Math.PI * t / P, f = mid - amp * Math.cos(w);                 // 当前倍率
+      var ang = BASE * (mid * t - amp * P / (2 * Math.PI) * Math.sin(w));      // f 的积分
+      rot(tj, ang * .5);
+      water.setAttribute('fill-opacity', (.015 + .045 * (f - LO) / (HI - LO)).toFixed(3));
+      put(moon, norm(t * 360 / P), 212);
+      moonShade.setAttribute('cx', (16 * (f - LO) / (HI - LO) - 8).toFixed(1));
+      lab.textContent = Math.sin(w) >= 0 ? '· 潮涨 ·' : '· 潮落 ·';
+      ps.forEach(function (g, i) { put(g, i * 120 + 15 + ang * [1, .8, .65][i], RS[i]); });
+    };
+  },
+  // 肆 阴阳对转：内圈阳顺、外圈阴逆；角度差 < 10° 时连朱砂线
+  duet: function (s, id) {
+    var RIN = 120, ROUT = 178, T = 50;
+    var cl = el('clipPath', { id: id + 'clip' }, el('defs', {}, s)); el('circle', { r: 226 }, cl);
+    var wash = taiji(el('g', { 'clip-path': 'url(#' + id + 'clip)' }, s), 226, 'rgba(7,87,90,.07)', 'rgba(255,255,255,0)');
+    base(s, [RIN, ROUT], ['none', '1.5 4']);
+    [[RIN, 0], [ROUT, 1]].forEach(function (q) { var a = 205, p = pt(a, q[0]); el('path', { d: q[1] ? 'M3,-3L-2,0L3,3' : 'M-3,-3L2,0L-3,3', fill: 'none', stroke: q[1] ? TEAL : INK, 'stroke-opacity': .6, transform: 'translate(' + p[0] + ' ' + p[1] + ') rotate(' + a + ')' }, s); });
+    var links = el('g', {}, s);
+    var tj = centre(s, id);
+    var ps = NODES.map(function (n, i) { return planet(s, id, n, i % 2); });
+    return function (t) {
+      var w = t * 360 / T;
+      rot(tj, w * .4); rot(wash, -w * .25);
+      var pos = NODES.map(function (n, i) { return i % 2 ? { a: norm(i * 90 + 45 - w), r: ROUT } : { a: norm(i * 90 + w), r: RIN }; });
+      ps.forEach(function (g, i) { put(g, pos[i].a, pos[i].r); });
+      links.textContent = '';
+      pos.forEach(function (p, i) { if (i % 2) return; pos.forEach(function (q, j) {
+        if (!(j % 2)) return;
+        var d = Math.abs(norm(p.a - q.a + 180) - 180); if (d >= 10) return;
+        var o = pt(p.a, p.r + 30), e = pt(q.a, q.r - 30), k = 1 - d / 10;
+        el('line', { x1: o[0], y1: o[1], x2: e[0], y2: e[1], stroke: RED, 'stroke-width': 1.6, 'stroke-opacity': (.75 * k).toFixed(2) }, links);
+        el('circle', { cx: (o[0] + e[0]) / 2, cy: (o[1] + e[1]) / 2, r: 3, fill: RED, 'fill-opacity': (.8 * k).toFixed(2) }, links);
+      }); });
+    };
+  },
+  // 伍 摆荡：各节点在本位 ±28° 往复，周期 6 秒、相位错开；本位整体极慢漂移（傅科摆）
+  pendulum: function (s, id) {
+    var R = 150, AMP = 28, P = 6, DRIFT = 6 / 60;
+    base(s, [R], ['2 5']);
+    var arcs = el('g', {}, s), rods = el('g', {}, s);
+    var tj = centre(s, id);
+    var homes = [10, 100, 190, 280];
+    var arcEls = homes.map(function () { return el('path', { fill: 'none', stroke: TEAL, 'stroke-width': 8, 'stroke-opacity': .1, 'stroke-linecap': 'round' }, arcs); });
+    var homeDots = homes.map(function () { return el('circle', { r: 2.6, fill: RED }, arcs); });
+    var rodEls = homes.map(function () { return el('line', { stroke: INK, 'stroke-opacity': .35, 'stroke-width': 1 }, rods); });
+    var ps = NODES.map(function (n) { return planet(s, id, n); });
+    return function (t) {
+      var drift = t * DRIFT;
+      rot(tj, Math.sin(2 * Math.PI * t / P) * 8);
+      ps.forEach(function (g, i) {
+        var h = homes[i] + drift, a = h + AMP * Math.sin(2 * Math.PI * t / P - i * Math.PI / 2);
+        var A = pt(h - AMP, R), B = pt(h + AMP, R);
+        arcEls[i].setAttribute('d', 'M' + A[0].toFixed(1) + ',' + A[1].toFixed(1) + 'A' + R + ' ' + R + ' 0 0 1 ' + B[0].toFixed(1) + ',' + B[1].toFixed(1));
+        var hd = pt(h, R + 36); homeDots[i].setAttribute('cx', hd[0].toFixed(1)); homeDots[i].setAttribute('cy', hd[1].toFixed(1));
+        var q = put(g, a, R), o = pt(a, 52), e = pt(a, R - 30);
+        rodEls[i].setAttribute('x1', o[0].toFixed(1)); rodEls[i].setAttribute('y1', o[1].toFixed(1));
+        rodEls[i].setAttribute('x2', e[0].toFixed(1)); rodEls[i].setAttribute('y2', e[1].toFixed(1));
+      });
+    };
+  }
+};
+
+/* ———— 运行：全局转速滑块 + 暂停；鼠标压在某张图上时那张缓停 ———— */
+var q = new URLSearchParams(location.search), FREEZE = q.has('t') ? +q.get('t') : null;   // ?t=12 冻结在第 12 秒（截图用）
+var rate = 1, paused = false, cards = [];
+document.querySelectorAll('figure[data-mode]').forEach(function (f, i) {
+  var s = f.querySelector('svg'), id = 'm' + i;
+  defs(s, id);
+  var c = { frame: MODES[f.dataset.mode](s, id), t: FREEZE == null ? 0 : FREEZE, k: 1, hover: false };
+  f.addEventListener('pointerenter', function () { c.hover = true; });
+  f.addEventListener('pointerleave', function () { c.hover = false; });
+  c.frame(c.t); cards.push(c);
+});
+var rateIn = document.getElementById('rate'), rateOut = document.getElementById('rateOut'), pauseBtn = document.getElementById('pause');
+rateIn.addEventListener('input', function () { rate = +rateIn.value; rateOut.textContent = '×' + rate.toFixed(2); });
+pauseBtn.addEventListener('click', function () { paused = !paused; pauseBtn.textContent = paused ? '继续' : '暂停'; });
+var last = 0;
+function tick(now) {
+  requestAnimationFrame(tick);
+  var dt = last ? Math.min(.1, (now - last) / 1000) : 0; last = now;
+  if (FREEZE != null) return;
+  cards.forEach(function (c) {
+    c.k += ((c.hover ? 0 : 1) - c.k) * Math.min(1, dt * 3);
+    var v = paused ? 0 : rate * c.k;
+    if (v > .001) { c.t += v * dt; c.frame(c.t); }
+  });
+}
+requestAnimationFrame(tick);
+</script>
+</html>

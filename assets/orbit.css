@@ -133,7 +133,15 @@
 .life-map .compass-dirs button:hover{background:rgba(12,69,75,.05)}
 .life-map .compass-dirs button:focus-visible{outline:1px solid var(--cinnabar);outline-offset:-3px}
 .life-map .compass-dirs .dirs-reset{justify-content:center;height:20px;margin-top:3px;border-top:1px solid rgba(20,33,31,.12);font-size:9.5px;letter-spacing:.12em;opacity:.8}
-.life-map .compass-dir[aria-expanded="true"]{background:rgba(12,69,75,.06)}
+.life-map .compass-dock>.compass-motions{width:114px}
+.life-map .compass-motions button{height:auto;padding:3px 6px 3px 15px;position:relative}
+.life-map .compass-motions button>span{display:flex;flex-direction:column;gap:1px}
+.life-map .compass-motions button b{font-size:11.5px;color:var(--ink-secondary)}
+.life-map .compass-motions button small{font-size:8.5px;line-height:1.2;color:var(--ink-secondary);opacity:.72;white-space:nowrap}
+.life-map .compass-motions button[aria-selected="true"]{background:rgba(12,69,75,.06)}
+.life-map .compass-motions button[aria-selected="true"] b{color:var(--deep-teal)}
+.life-map .compass-motions button[aria-selected="true"]:before{content:"";position:absolute;left:7px;top:8px;width:4px;height:4px;border-radius:50%;background:var(--cinnabar)}
+.life-map .compass-motion[aria-expanded="true"],.life-map .compass-dir[aria-expanded="true"]{background:rgba(12,69,75,.06)}
 
 /* 阴阳对转：逆行的节点为阴，染成青色 */
 .life-map[data-compass] .map-node.orb.is-yin{background:radial-gradient(75% 75% at 36% 30%,#3d7f7d 0,#0b3d3e 100%)}

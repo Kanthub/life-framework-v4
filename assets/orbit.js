@@ -29,14 +29,14 @@
      「快」= 中 ×2；「极快」名义 ×5，但按模式封顶：节点峰值角速度不超过 PEAK_CAP（见 rateNow）。旧版存的键名不变，直接沿用 */
   var RATES = [['slow', '慢', .5], ['mid', '中', 1], ['fast', '快', 2], ['max', '极快', 5], ['stop', '停', 0]];
   var PEAK_CAP = 60;                    // 度 / 秒
-  /* 运行模式：键、按钮上的字、完整说明 */
+  /* 运行模式：键、按钮上的字、完整说明、面板里的简短说明 */
   var MOTIONS = [
-    ['sync', '同步', '同步旋转（原样）：节点按底图的轨道公转，内快外慢'],
-    ['breath', '呼吸', '壹 呼吸 · 一进一出：慢慢公转，同时沿半径一收一放，节点依次起伏'],
-    ['kepler', '星轨', '贰 星轨 · 各安其位：像行星，内圈快、外圈慢（周期 ∝ 半径^1.5）'],
-    ['tide', '潮汐', '叁 潮汐 · 张弛有度：整盘转速按 30 秒一周涨落，退潮时几乎停住'],
-    ['duet', '对转', '肆 阴阳对转 · 一顺一逆：相邻节点一顺一逆 —— 第 1、3、5 个节点按所在轨道设定的方向走，第 2、4、6 个反着走'],
-    ['pendulum', '摆荡', '伍 摆荡 · 傅科摆：节点在本位左右摆动，本位极慢漂移，最容易点中']
+    ['sync', '同步', '同步旋转（原样）：节点按底图的轨道公转，内快外慢', '随底图公转，原样'],
+    ['breath', '呼吸', '壹 呼吸 · 一进一出：慢慢公转，同时沿半径一收一放，节点依次起伏', '一进一出，依次起伏'],
+    ['kepler', '星轨', '贰 星轨 · 各安其位：像行星，内圈快、外圈慢（周期 ∝ 半径^1.5）', '各安其位，内快外慢'],
+    ['tide', '潮汐', '叁 潮汐 · 张弛有度：整盘转速按 30 秒一周涨落，退潮时几乎停住', '张弛有度，30 秒涨落'],
+    ['duet', '对转', '肆 阴阳对转 · 一顺一逆：相邻节点一顺一逆 —— 第 1、3、5 个节点按所在轨道设定的方向走，第 2、4、6 个反着走', '一顺一逆，阴阳相间'],
+    ['pendulum', '摆荡', '伍 摆荡 · 傅科摆：节点在本位左右摆动，本位极慢漂移，最容易点中', '本位摆动，最易点中']
   ];
   var NS = 'http://www.w3.org/2000/svg';
   var INK = '#14211f', TEAL = '#07575a', RED = '#b64b35', PAPER = '#f0ebdf';
@@ -165,7 +165,6 @@
       el.classList.toggle('is-night', norm(ang - art.wash) < 180);      // 进入大阴阳鱼的深色半边
     }
   }
-  function place(el, i, a, r) { var d = toD(r), m = moved(i, d); m.ang = a + m.da; m.d = d + m.dd; placeAt(el, m.ang, m.d); return m; }
 
   /* ———— 罗盘底图（SVG，按样式重建） ———— */
   var art = { layers: [], wash: 0, frame: null, trails: null, deco: null };
@@ -325,23 +324,56 @@
     dock.appendChild(b);
     return b;
   }
-  var mover = cycler('compass-motion', '运行', MOTIONS, function () { return motion; }, setMotion);
+  // 运行模式：和「方向」一样，点开左侧小面板，列出全部模式，点一行即切换
+  var mover = document.createElement('button');
+  mover.type = 'button'; mover.className = 'compass-cycle compass-motion';
+  mover.setAttribute('aria-haspopup', 'true'); mover.setAttribute('aria-expanded', 'false');
+  mover.innerHTML = '<small>运行</small><b></b>';
+  dock.appendChild(mover);
   var speeder = cycler('compass-speed', '转速', RATES, function () { return rateKey; }, setRate);
+  var motionPanel = document.createElement('div');
+  motionPanel.className = 'compass-dirs compass-motions'; motionPanel.hidden = true;
+  motionPanel.setAttribute('role', 'listbox'); motionPanel.setAttribute('aria-label', '运行模式');
+  motionPanel.innerHTML = '<p>运行模式</p>' + MOTIONS.map(function (q) {
+    return '<button type="button" role="option" data-m="' + q[0] + '" title="' + q[2] + '"><span><b>' + q[1] + '</b><small>' + q[3] + '</small></span></button>';
+  }).join('');
+  dock.appendChild(motionPanel);
   function markMotion() {
-    MOTIONS.forEach(function (q, i) {
+    MOTIONS.forEach(function (q) {
       if (q[0] !== motion) return;
       mover.querySelector('b').textContent = q[1];
       mover.dataset.motion = q[0];
-      mover.title = '运行模式：' + q[2] + '\n点击切换到「' + MOTIONS[(i + 1) % MOTIONS.length][1] + '」';
-      mover.setAttribute('aria-label', '运行模式：' + q[1] + '，点击切换');
+      mover.title = '运行模式：' + q[2] + '\n点击展开，选择运行模式';
+      mover.setAttribute('aria-label', '运行模式：' + q[1] + '，点击展开');
     });
+    [].forEach.call(motionPanel.querySelectorAll('[data-m]'), function (b) { b.setAttribute('aria-selected', b.dataset.m === motion ? 'true' : 'false'); });
     map.dataset.motion = motion;
   }
+  function openMotions(on) {
+    if (on && typeof openDirs === 'function') openDirs(false);
+    motionPanel.hidden = !on; mover.setAttribute('aria-expanded', on ? 'true' : 'false');
+    if (on) { var cur = motionPanel.querySelector('[aria-selected="true"]'); if (cur) cur.focus(); }
+  }
+  mover.addEventListener('click', function () { openMotions(motionPanel.hidden); });
+  mover.addEventListener('keydown', function (e) {
+    if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && motionPanel.hidden) { e.preventDefault(); openMotions(true); }
+  });
+  motionPanel.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-m]'); if (!b) return;
+    setMotion(b.dataset.m); openMotions(false); mover.focus();
+  });
+  motionPanel.addEventListener('keydown', function (e) {
+    var k = { ArrowDown: 1, ArrowUp: -1 }[e.key]; if (!k) return;
+    e.preventDefault();
+    var bs = [].slice.call(motionPanel.querySelectorAll('[data-m]')), i = bs.indexOf(document.activeElement);
+    bs[(i < 0 ? 0 : i + k + bs.length) % bs.length].focus();
+  });
+  document.addEventListener('pointerdown', function (e) { if (!motionPanel.hidden && !motionPanel.contains(e.target) && !mover.contains(e.target)) openMotions(false); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !motionPanel.hidden) { openMotions(false); mover.focus(); } });
   function setMotion(key) {
     motion = key;
     savePrefs();
     markMotion();
-    addAng = null;
     layout();
   }
   function markRate() {
@@ -384,6 +416,7 @@
     }).join('') + (same ? '' : '<button type="button" class="dirs-reset" data-reset title="恢复这个底图默认的方向">复原</button>');
   }
   function openDirs(on) {
+    if (on) openMotions(false);
     dirPanel.hidden = !on; dirBtn.setAttribute('aria-expanded', on ? 'true' : 'false');
     if (!on) trace(null);
   }
@@ -429,7 +462,6 @@
     dirSet = p.dirs && typeof p.dirs === 'object' && !Array.isArray(p.dirs) ? p.dirs : {};
     if (st !== style || !art.layers.length) applyStyle(st);
     else { curDirs = dirsOf(); markArrows(); }
-    addAng = null;
     markMotion(); markRate(); markDir();
   }
   // 只写当前领域（第一次写时给领域分配 id）；旧的全局 key 不再改，没有自己设置的领域照旧读它们
@@ -461,7 +493,7 @@
   // 每次重绘罗盘后：给节点挂上样式，并摆到位置上
   function decorate() {
     var d = domains[active]; if (!d) return;
-    // 这个领域已经拖过位置，新加的节点就落在「新增」原来所在的空位
+    // 这个领域已经拖过位置，新加的节点落在默认轨道上最空的那段弧
     if (d.nodes.some(function (n) { return typeof n.a === 'number'; })) {
       var fresh = d.nodes.filter(function (n) { return typeof n.a !== 'number'; });
       if (fresh.length) {
@@ -552,37 +584,16 @@
     drawDeco(ms);
     var add = box.querySelector('.map-add');
     if (!add) return;
-    if (motion === 'sync') { place(add, -1, gapAngle(d), R_HOME / VIEW); return; }
-    // 其它模式下节点快慢不一：「新增」在默认轨道上找离所有节点（含拖动中的）最远的位置，缓缓滑过去；
-    // 当前位置仍够宽敞就不挪，免得来回追
-    var R0 = toD(R_HOME / VIEW), need = nodeSize() * 1.15, pts = ms.filter(Boolean);
-    if (drag && drag.pos) pts.push(point(drag.pos.a, drag.pos.d, drag.pos.mer));
-    var zone = centerZone(add);
-    var clear = function (a) {
-      var q = point(a, R0), c = Infinity; pts.forEach(function (p) { c = Math.min(c, Math.hypot(p.x - q.x, p.y - q.y)); });
-      // 中心领域名当作禁区：按钮与名称框有交叠就算不可用
-      if (zone && q.x > zone.l && q.x < zone.r && q.y > zone.t && q.y < zone.b) c = -1;
-      return c;
-    };
-    if (addAng == null || clear(addAng) < need) {
-      var best = addAng == null ? 0 : addAng, bc = -1;
-      for (var g = 0; g < 360; g += 4) { var c = clear(g) - (addAng == null ? 0 : Math.abs(norm(g - addAng + 180) - 180) * .05); if (c > bc) { bc = c; best = g; } }
-      addGoal = best;
-      if (addAng == null) addAng = best;
-    }
-    addAng += (norm(addGoal - addAng + 180) - 180) * Math.min(1, (dt || .016) * 6);
-    placeAt(add, addAng, R0);
+    // 「新增」停在罗盘左下角的泊位：刻度环之外、方框之内，任何底图、模式下节点（连同呼吸、避让、摆荡、子午圈）都扫不到，
+    // 也不压中心领域名、上下进守和右侧控制条；位置只随罗盘尺寸变，所以不再追着空隙滑动
+    var k = berth(add);
+    if (add.style.left !== k.left || add.style.top !== k.top) { add.style.left = k.left; add.style.top = k.top; }
   }
-  var addAng = null, addGoal = 0, zoneKey = '', zoneVal = null;
-  // 中心领域名的范围（设计稿单位，已按「新增」按钮半径外扩）；样式、宽度、名称不变就复用
-  function centerZone(add) {
-    var b = map.querySelector('.map-center b'); if (!b) return null;
-    var key = style + '|' + map.clientWidth + '|' + b.textContent;
-    if (key === zoneKey) return zoneVal;
-    var mr = map.getBoundingClientRect(), r = b.getBoundingClientRect(), k = D / (mr.width || 1), h = (add.offsetWidth || 40) / 2 + 4;
-    zoneKey = key;
-    zoneVal = r.width ? { l: (r.left - mr.left - h) * k - D / 2, r: (r.right - mr.left + h) * k - D / 2, t: (r.top - mr.top - h) * k - D / 2, b: (r.bottom - mr.top + h) * k - D / 2 } : null;
-    return zoneVal;
+  // 泊位（百分比）：按钮外沿离方框留 6 个设计稿单位；方框太小时至少离开节点的最大活动半径
+  function berth(add) {
+    var h = (add.offsetWidth || 54) / 2 * D / (map.clientWidth || 435), reach = dMax() + 6 + nodeSize() / 2;
+    var c = Math.max(D / 2 - h - 6, (reach + h + 4) / Math.SQRT2);
+    return { left: (50 - c / D * 100).toFixed(3) + '%', top: (50 + c / D * 100).toFixed(3) + '%' };
   }
 
   /* ———— 运行模式的装饰（SVG，水墨淡笔，pointer-events:none）：每种样式重建一次图层，切模式时清空重画 ————
@@ -686,7 +697,7 @@
     }
   }
 
-  // 「新增」放在默认轨道上最空的那段弧中间
+  // 新加的节点落在默认轨道上最空的那段弧中间
   function gapAngle(d) { return gapOf(d.nodes.map(function (n, i) { return norm(baseOf(n, i).a); })); }
   function gapOf(as) {
     as = as.slice().sort(function (x, y) { return x - y; });

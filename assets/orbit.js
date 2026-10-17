@@ -21,8 +21,9 @@
   var SPEED_KEY = 'kongwo-compass-speed';
   var MOTION_KEY = 'kongwo-compass-motion';
   /* 转速档位：键、字、倍率。倍率乘在公转时钟上，时钟 1 秒 = 设计稿（orbit-motion-options.html）滑块 ×1 时的 1 秒；
-     「极快」×5 高于设计稿滑块最大 ×3。旧版存的 slow / mid / fast / stop 键名不变，直接沿用 */
-  var RATES = [['slow', '慢', .5], ['mid', '中', 1], ['fast', '快', 2.5], ['max', '极快', 5], ['stop', '停', 0]];
+     「快」= 中 ×2；「极快」名义 ×5，但按模式封顶：节点峰值角速度不超过 PEAK_CAP（见 rateNow）。旧版存的键名不变，直接沿用 */
+  var RATES = [['slow', '慢', .5], ['mid', '中', 1], ['fast', '快', 2], ['max', '极快', 5], ['stop', '停', 0]];
+  var PEAK_CAP = 60;                    // 度 / 秒
   /* 运行模式：键、按钮上的字、完整说明 */
   var MOTIONS = [
     ['sync', '同步', '同步旋转（原样）：节点按底图的轨道公转，内快外慢'],
@@ -80,23 +81,36 @@
   /* 运行模式：第 i 个节点、本位半径 d（设计稿单位）此刻的偏移 —— da 角度偏移、dd 半径偏移、dir 运动方向（0 = 往复）
      偏移只取决于 i、d 和时钟，与本位角度无关，所以拖动松手时可以反推本位 */
   function moved(i, d) {
-    var t = clock, w;
+    var t = clock, w, sd = style === 'b' ? S.dirs[nearest(d)] : 1;   // 乙：主旋转方向跟随轨道箭头（阳顺阴逆）
     switch (motion) {
       case 'breath':     // 半径 ±20、8 秒一呼吸，相邻相位差 0.7；公转一圈 120 秒。贴近内外界时收窄幅度，不出罗盘
         var lo = Math.max(dMin() - 8, d - 20), hi = Math.min(dMax(), d + 20);
-        return { da: norm(t * 3), dd: (lo + hi) / 2 - d + (hi - lo) / 2 * Math.sin(2 * Math.PI * t / 8 - i * .7), dir: 1 };
+        return { da: norm(sd * t * 3), dd: (lo + hi) / 2 - d + (hi - lo) / 2 * Math.sin(2 * Math.PI * t / 8 - i * .7), dir: sd };
       case 'kepler':     // 开普勒：周期 = 24 秒 ×（d / 96）^1.5
-        return { da: norm(t * 360 / (24 * Math.pow(d / 96, 1.5))), dd: 0, dir: 1 };
+        return { da: norm(sd * t * 360 / (24 * Math.pow(d / 96, 1.5))), dd: 0, dir: sd };
       case 'tide':       // 倍率在 0.12～1.6 间 30 秒一周涨落（这里是它的积分）；外圈稍慢
         w = 2 * Math.PI * t / 30;
-        return { da: norm(360 / 70 * (.86 * t - .74 * 30 / (2 * Math.PI) * Math.sin(w)) * interp([dMin(), dMax()], [1, .65], d)), dd: 0, dir: 1 };
-      case 'duet':       // 相邻节点一顺一逆，50 秒一圈
-        return { da: norm((i % 2 ? -1 : 1) * t * 360 / 50), dd: 0, dir: i % 2 ? -1 : 1 };
-      case 'pendulum':   // 本位 ±28°、6 秒一摆、相位错开 90°；本位每分钟漂移 6°
-        return { da: norm(t * .1 + 28 * Math.sin(2 * Math.PI * t / 6 - i * Math.PI / 2)), dd: 0, dir: 0 };
+        return { da: norm(sd * 360 / 70 * (.86 * t - .74 * 30 / (2 * Math.PI) * Math.sin(w)) * interp([dMin(), dMax()], [1, .65], d)), dd: 0, dir: sd };
+      case 'duet':       // 相邻节点一顺一逆，50 秒一圈（乙：顺行的那个跟随轨道箭头，逆行的反之）
+        w = (i % 2 ? -1 : 1) * sd;
+        return { da: norm(w * t * 360 / 50), dd: 0, dir: w };
+      case 'pendulum':   // 本位 ±28°、8 秒一摆、相位错开 90°；本位每分钟漂移 6°
+        return { da: norm(sd * t * .1 + 28 * Math.sin(2 * Math.PI * t / 8 - i * Math.PI / 2)), dd: 0, dir: 0, home: norm(sd * t * .1) };
     }
     return { da: phaseAt(d), dd: 0, dir: S.dirs[nearest(d)] };
   }
+  // 各模式在 ×1 时的峰值角速度（度 / 秒），「极快」按它封顶
+  function peak() {
+    switch (motion) {
+      case 'breath': return 3;
+      case 'kepler': return 360 / (24 * Math.pow(dMin() / 96, 1.5));
+      case 'tide': return 1.6 * 360 / 70;
+      case 'duet': return 360 / 50;
+      case 'pendulum': return 28 * 2 * Math.PI / 8 + .1;
+    }
+    return 360 / Math.min.apply(null, S.periods);
+  }
+  function rateNow() { return rateKey === 'max' ? Math.min(rate, PEAK_CAP / peak()) : rate; }
   // 浑天仪：半径 d 处的椭圆（rx = d，ry 与倾角按轨道插值）
   function shape(d) {
     if (!S.ellipse) return { rx: d, ry: d, tilt: 0 };
@@ -140,7 +154,7 @@
   function place(el, i, a, r) { var d = toD(r), m = moved(i, d); m.ang = a + m.da; m.d = d + m.dd; placeAt(el, m.ang, m.d); return m; }
 
   /* ———— 罗盘底图（SVG，按样式重建） ———— */
-  var art = { layers: [], wash: 0, frame: null, trails: null };
+  var art = { layers: [], wash: 0, frame: null, trails: null, deco: null };
   function svg(tag, at, p) { var e = document.createElementNS(NS, tag); for (var k in at) e.setAttribute(k, at[k]); if (p) p.appendChild(e); return e; }
   function txt(p, s, at) { var t = svg('text', Object.assign({ 'text-anchor': 'middle' }, at), p); t.textContent = s; return t; }
   function pt(a, r) { var t = (a - 90) * Math.PI / 180; return [Math.cos(t) * r, Math.sin(t) * r]; }
@@ -248,6 +262,7 @@
     style = key; S = STYLES[key];
     map.dataset.compass = key;
     BUILD[key]();
+    art.deco = svg('g', {}, layer('deco'));
     if (art.frame) art.frame(clock);
     switcher.querySelectorAll('[data-compass]').forEach(function (b) {
       var on = b.dataset.compass === key;
@@ -317,7 +332,7 @@
       if (q[0] !== rateKey) return;
       speeder.querySelector('b').textContent = q[1];
       speeder.dataset.rate = q[0];
-      speeder.title = '公转转速：' + (q[2] ? q[1] + '（×' + q[2] + '）' : '停') + '\n点击切换到「' + RATES[(i + 1) % RATES.length][1] + '」';
+      speeder.title = '公转转速：' + (q[2] ? q[1] + (q[0] === 'max' ? '（峰值不超过 ' + PEAK_CAP + '°/秒）' : '（×' + q[2] + '）') : '停') + '\n点击切换到「' + RATES[(i + 1) % RATES.length][1] + '」';
       speeder.setAttribute('aria-label', '公转转速：' + q[1] + '，点击切换');
     });
   }
@@ -375,36 +390,180 @@
     }
     layout();
   }
+  /* 节点避让（星轨 / 潮汐 / 对转 / 摆荡）：两个节点在屏幕上近到不足一个直径时，内侧的往里、外侧的往外各让一点；
+     目标偏移只按「未避让的位置」算，再逐帧缓动过去，所以不会跳，也不会来回抖。只改显示位置，不改数据、不影响拖动反推 */
+  var off = [], offA = [], AVOID_MAX = 24, AVOID_ANG = 9;
+  function nodeSize() { return 54 * D / (map.clientWidth || 435); }        // 节点直径（设计稿单位）
+  function avoid(ms, dt) {
+    var need = nodeSize() * 1.04, tgt = ms.map(function () { return 0; }), tga = tgt.slice();
+    if (motion !== 'sync' && motion !== 'breath') {
+      for (var i = 0; i < ms.length; i++) for (var j = i + 1; j < ms.length; j++) {
+        var p = ms[i], q = ms[j]; if (!p || !q) continue;
+        var dist = Math.hypot(p.x - q.x, p.y - q.y); if (dist >= need) continue;
+        var amt = Math.min(AVOID_MAX, (need - dist) / 2 + 2), inI = p.d < q.d || (p.d === q.d && i < j);
+        tgt[i] += inI ? -amt : amt; tgt[j] += inI ? amt : -amt;
+        // 再沿轨道前后各让几度（浑天仪的扁椭圆在交叉处光靠半径错不开）：角度在前的稍往前、在后的稍往后
+        var aw = Math.min(AVOID_ANG, (need - dist) / need * AVOID_ANG * 1.5), ahead = norm(p.ang - q.ang + 180) - 180 >= 0;
+        tga[i] += ahead ? aw : -aw; tga[j] += ahead ? -aw : aw;
+      }
+    }
+    ms.forEach(function (m, i) {
+      if (!m) { off[i] = 0; offA[i] = 0; return; }
+      var g = Math.max(-AVOID_MAX, Math.min(AVOID_MAX, tgt[i]));
+      g = Math.max(dMin() - 6, Math.min(dMax() + 6, m.d + g)) - m.d;   // 不出罗盘、不压中心
+      off[i] = dt == null || off[i] == null ? g : off[i] + (g - off[i]) * Math.min(1, dt * 4);
+      m.d += off[i];
+      var ga = Math.max(-AVOID_ANG, Math.min(AVOID_ANG, tga[i]));
+      offA[i] = dt == null || offA[i] == null ? ga : offA[i] + (ga - offA[i]) * Math.min(1, dt * 3);
+      m.ang += offA[i];
+    });
+  }
   function layout(dt) {
     var d = domains[active]; if (!d) return;
-    var shown = [];
     if (art.frame) art.frame(clock);
-    var trails = art.trails ? art.trails.children : [];
-    nodeEls().forEach(function (el, i) {
-      var n = d.nodes[i], tr = trails[i]; if (!n) return;
-      if (drag && drag.el === el) { if (tr) tr.setAttribute('stroke-opacity', 0); return; }
-      var b = baseOf(n, i), m = place(el, i, b.a, b.r);
-      shown.push(norm(m.ang));
+    var trails = art.trails ? art.trails.children : [], els = nodeEls(), ms = [];
+    els.forEach(function (el, i) {
+      var n = d.nodes[i]; if (!n) return;
+      if (drag && drag.el === el) { off[i] = 0; return; }
+      var b = baseOf(n, i), m = moved(i, toD(b.r)); m.home0 = b.a;
+      m.ang = b.a + m.da; m.d = toD(b.r) + m.dd; var p = point(m.ang, m.d); m.x = p.x; m.y = p.y;
+      ms[i] = m;
+    });
+    avoid(ms, dt);
+    els.forEach(function (el, i) {
+      var m = ms[i], tr = trails[i];
+      if (!m) { if (tr) tr.setAttribute('stroke-opacity', 0); return; }
+      placeAt(el, m.ang, m.d); var p = point(m.ang, m.d); m.x = p.x; m.y = p.y;
       el.classList.toggle('is-yin', motion === 'duet' && m.dir < 0);
       if (tr) {
-        // 墨色轨迹拖在运动方向的后面；摆荡模式不画
+        // 墨色轨迹拖在运动方向的后面；摆荡模式不画，星轨模式改用渐淡尾迹（见 deco）
         var C = 2 * Math.PI * m.d;
         tr.setAttribute('r', m.d.toFixed(1));
         tr.setAttribute('stroke-dasharray', (C * 34 / 360).toFixed(1) + ' ' + C.toFixed(1));
-        tr.setAttribute('stroke-opacity', m.dir ? .35 : 0);
+        tr.setAttribute('stroke-opacity', m.dir && motion !== 'kepler' ? .35 : 0);
         tr.setAttribute('transform', 'rotate(' + (m.ang - 90 - (m.dir < 0 ? 0 : 34)).toFixed(2) + ')');
       }
     });
+    drawDeco(ms);
     var add = box.querySelector('.map-add');
     if (!add) return;
     if (motion === 'sync') { place(add, -1, gapAngle(d), R_HOME / VIEW); return; }
-    // 其它模式下节点之间快慢不一：「新增」每帧找屏幕上最空的那段弧，缓缓滑过去
-    var goal = gapOf(shown);
-    if (addAng == null) addAng = goal;
-    else addAng += (norm(goal - addAng + 180) - 180) * Math.min(1, (dt || .016) * 3);
-    placeAt(add, addAng, toD(R_HOME / VIEW));
+    // 其它模式下节点快慢不一：「新增」在默认轨道上找离所有节点（含拖动中的）最远的位置，缓缓滑过去；
+    // 当前位置仍够宽敞就不挪，免得来回追
+    var R0 = toD(R_HOME / VIEW), need = nodeSize() * 1.15, pts = ms.filter(Boolean);
+    if (drag && drag.pos) pts.push(point(drag.pos.a, drag.pos.d));
+    var clear = function (a) { var q = point(a, R0), c = Infinity; pts.forEach(function (p) { c = Math.min(c, Math.hypot(p.x - q.x, p.y - q.y)); }); return c; };
+    if (addAng == null || clear(addAng) < need) {
+      var best = addAng == null ? 0 : addAng, bc = -1;
+      for (var g = 0; g < 360; g += 4) { var c = clear(g) - (addAng == null ? 0 : Math.abs(norm(g - addAng + 180) - 180) * .05); if (c > bc) { bc = c; best = g; } }
+      addGoal = best;
+      if (addAng == null) addAng = best;
+    }
+    addAng += (norm(addGoal - addAng + 180) - 180) * Math.min(1, (dt || .016) * 6);
+    placeAt(add, addAng, R0);
   }
-  var addAng = null;
+  var addAng = null, addGoal = 0;
+
+  /* ———— 运行模式的装饰（SVG，水墨淡笔，pointer-events:none）：每种样式重建一次图层，切模式时清空重画 ————
+     呼吸：中心气环随呼吸胀缩 + 吸 / 呼；星轨：渐淡墨色尾迹 + 近乎一线时的朱砂细虚线；
+     潮汐：外圈小月亮标潮相 + 盘面淡青水色；对转：阴阳两节点相遇时的朱砂细线；摆荡：细杆 + 摆幅弧 */
+  var CORE = { a: [70, -104], b: [68, 84], c: [60, -70] };   // 各样式中心气环半径、吸 / 呼字的 y
+  var deco = { mode: null, n: -1, g: null, parts: {} };
+  function buildDeco(n) {
+    var g = art.deco; if (!g) return;
+    g.textContent = ''; deco = { mode: motion, n: n, style: style, g: g, parts: {} };
+    var P = deco.parts, k;
+    if (motion === 'breath') {
+      P.ring = svg('circle', { fill: 'none', stroke: TEAL, 'stroke-width': 1.2, 'stroke-opacity': .35 }, g);
+      P.ring2 = svg('circle', { fill: 'none', stroke: TEAL, 'stroke-width': 5, 'stroke-opacity': .06 }, g);
+      P.word = txt(g, '吸', { y: CORE[style][1] + 3, 'font-size': 9.5, fill: TEAL, 'fill-opacity': .6, 'letter-spacing': '.1em' });
+    } else if (motion === 'kepler') {
+      P.tails = [];
+      for (k = 0; k < n; k++) { var seg = []; for (var j = 0; j < 7; j++) seg.push(svg('path', { fill: 'none', stroke: INK, 'stroke-linecap': 'round', 'stroke-width': 2.4 - j * .25, 'stroke-opacity': (.22 * (1 - j / 7)).toFixed(3) }, g)); P.tails.push(seg); }
+      P.lines = [0, 1, 2].map(function () { return svg('line', { stroke: RED, 'stroke-width': .9, 'stroke-dasharray': '2 3', 'stroke-opacity': 0 }, g); });
+    } else if (motion === 'tide') {
+      P.water = svg('circle', { r: 225, fill: TEAL, 'fill-opacity': 0 }, g);
+      var m = P.moon = svg('g', { transform: 'translate(' + pt(45, 236).join(' ') + ')' }, g);
+      svg('circle', { r: 11, fill: PAPER, 'fill-opacity': .55 }, m);                                       // 淡淡的月晕
+      svg('circle', { r: 7.5, fill: '#2b3b38', 'fill-opacity': .32 }, m);                                  // 暗面：淡墨
+      P.lit = svg('path', { fill: '#fbf8f0' }, m);                                                           // 亮面：纸白
+      svg('circle', { r: 7.5, fill: 'none', stroke: INK, 'stroke-width': .7, 'stroke-opacity': .55 }, m);
+      P.phase = txt(m, '', { y: 21, 'font-size': 8, fill: '#626964' });
+    } else if (motion === 'duet') {
+      P.links = [];
+      for (k = 0; k < n * (n - 1) / 2; k++) P.links.push(svg('line', { stroke: RED, 'stroke-width': 1, 'stroke-linecap': 'round', 'stroke-opacity': 0 }, g));
+    } else if (motion === 'pendulum') {
+      P.rods = []; P.arcs = [];
+      for (k = 0; k < n; k++) {
+        P.arcs.push(svg('path', { fill: 'none', stroke: INK, 'stroke-width': .8, 'stroke-opacity': .2, 'stroke-dasharray': '1.5 3' }, g));
+        P.rods.push(svg('line', { stroke: INK, 'stroke-width': .8, 'stroke-opacity': .22 }, g));
+      }
+    }
+  }
+  function arcPath(a0, a1, d) {
+    var s = '', n = Math.max(2, Math.ceil(Math.abs(a1 - a0) / 3));
+    for (var k = 0; k <= n; k++) { var p = point(a0 + (a1 - a0) * k / n, d); s += (k ? 'L' : 'M') + p.x.toFixed(1) + ',' + p.y.toFixed(1); }
+    return s;
+  }
+  function drawDeco(ms) {
+    if (!art.deco) return;
+    if (deco.mode !== motion || deco.n !== ms.length || deco.style !== style || deco.g !== art.deco) buildDeco(ms.length);
+    var P = deco.parts, t = clock, w, k;
+    if (motion === 'breath') {
+      w = 2 * Math.PI * t / 8; var R = CORE[style][0] + 4 * Math.sin(w), e = shape(R);
+      [P.ring, P.ring2].forEach(function (c) { c.setAttribute('r', R.toFixed(2)); });
+      P.ring.setAttribute('stroke-opacity', (.25 + .15 * Math.sin(w)).toFixed(3));
+      P.word.textContent = Math.cos(w) >= 0 ? '吸' : '呼';
+    } else if (motion === 'kepler') {
+      ms.forEach(function (m, i) {
+        var seg = P.tails[i]; if (!seg) return;
+        seg.forEach(function (s, j) {
+          if (!m) { s.setAttribute('d', ''); return; }
+          var a0 = m.ang - m.dir * (8 + j * 5), a1 = a0 - m.dir * 5;   // 节点身后（半径约 4°）起，每段 5°
+          s.setAttribute('d', arcPath(a0, a1, m.d));
+        });
+      });
+      // 两节点（不同半径）与中心近乎一线：中心到外侧节点画朱砂细虚线，越正越清楚
+      var pairs = [];
+      ms.forEach(function (p, i) { ms.forEach(function (q, j) { if (!p || !q || j <= i || Math.abs(p.d - q.d) < 20) return; var df = Math.abs(norm(p.ang - q.ang + 180) - 180); if (df < 7) pairs.push([df, p.d > q.d ? p : q, p.d > q.d ? q : p]); }); });
+      pairs.sort(function (x, y) { return x[0] - y[0]; });
+      P.lines.forEach(function (l, k) {
+        var pr = pairs[k]; if (!pr) { l.setAttribute('stroke-opacity', 0); return; }
+        var o = pr[1], s0 = point(o.ang, CORE[style][0] + 4);
+        l.setAttribute('x1', s0.x.toFixed(1)); l.setAttribute('y1', s0.y.toFixed(1));
+        l.setAttribute('x2', o.x.toFixed(1)); l.setAttribute('y2', o.y.toFixed(1));
+        l.setAttribute('stroke-opacity', (.6 * (1 - pr[0] / 7)).toFixed(3));
+      });
+    } else if (motion === 'tide') {
+      // 潮相 p：0 = 朔（退潮最低）→ .5 = 望（涨潮最高），与 moved() 里的 30 秒涨落同步
+      var ph = ((t / 30) % 1 + 1) % 1, f = (1 - Math.cos(2 * Math.PI * ph)) / 2;
+      P.water.setAttribute('fill-opacity', (.012 + .05 * f).toFixed(4));
+      var r = 7.5, c = Math.cos(2 * Math.PI * ph), rx = (r * Math.abs(c)).toFixed(2), wax = ph < .5;
+      // 亮面 = 亮侧半圆 + 明暗交界的半椭圆；新月 / 残月时交界线凸向亮侧，盈凸 / 亏凸时凸向暗侧
+      P.lit.setAttribute('d', f < .004 ? '' : 'M0,' + -r + 'A' + r + ' ' + r + ' 0 0 ' + (wax ? 1 : 0) + ' 0,' + r +
+        'A' + rx + ' ' + r + ' 0 0 ' + ((c > 0) === wax ? 0 : 1) + ' 0,' + -r + 'Z');
+      P.phase.textContent = ph < .0625 || ph >= .9375 ? '朔' : ph < .4375 ? '上弦' : ph < .5625 ? '望' : '下弦';
+    } else if (motion === 'duet') {
+      var near = nodeSize() * 1.9, idx = 0;
+      for (var i = 0; i < ms.length; i++) for (var j = i + 1; j < ms.length; j++) {
+        var l = P.links[idx++], p = ms[i], q = ms[j]; if (!l) continue;
+        var dist = p && q && p.dir !== q.dir ? Math.hypot(p.x - q.x, p.y - q.y) : Infinity;
+        if (dist >= near) { l.setAttribute('stroke-opacity', 0); continue; }
+        l.setAttribute('x1', p.x.toFixed(1)); l.setAttribute('y1', p.y.toFixed(1));
+        l.setAttribute('x2', q.x.toFixed(1)); l.setAttribute('y2', q.y.toFixed(1));
+        l.setAttribute('stroke-opacity', (.65 * Math.min(1, (near - dist) / (near * .5))).toFixed(3));
+      }
+    } else if (motion === 'pendulum') {
+      ms.forEach(function (m, i) {
+        var rod = P.rods[i], arc = P.arcs[i]; if (!rod) return;
+        if (!m) { rod.setAttribute('stroke-opacity', 0); arc.setAttribute('d', ''); return; }
+        var s0 = point(m.ang, CORE[style][0] + 4), h = m.home0 + m.home;
+        rod.setAttribute('x1', s0.x.toFixed(1)); rod.setAttribute('y1', s0.y.toFixed(1));
+        rod.setAttribute('x2', m.x.toFixed(1)); rod.setAttribute('y2', m.y.toFixed(1)); rod.setAttribute('stroke-opacity', .22);
+        arc.setAttribute('d', arcPath(h - 28, h + 28, m.d));
+      });
+    }
+  }
 
   // 「新增」放在默认轨道上最空的那段弧中间
   function gapAngle(d) { return gapOf(d.nodes.map(function (n, i) { return norm(baseOf(n, i).a); })); }
@@ -459,7 +618,8 @@
       speed += ((hold ? 0 : 1) - speed) * Math.min(1, dt * (hold ? 15 * Math.max(1, rate) / 2.5 : 3));
       if (!(speed >= 0 && speed <= 1)) speed = 0;
       // speed 管悬停缓停（0..1），rate 是用户选的档位；「停」时 rate=0，时钟不走、节点和底图都不动
-      if (speed * rate > .001) { clock += speed * rate * dt; layout(dt); }
+      var rn = rateNow();
+      if (speed * rn > .001) { clock += speed * rn * dt; layout(dt); }
     } catch (err) {
       if (!failed) { failed = true; console.error('[orbit] tick', err); }
     }

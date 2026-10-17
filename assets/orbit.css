@@ -47,6 +47,10 @@
 .life-map[data-compass] .map-node.orb:hover{transform:scale(1.07);box-shadow:0 0 0 4px rgba(240,235,223,.88),0 0 0 5px rgba(7,87,90,.45)}
 .life-map[data-compass] .map-node.orb:focus-visible{outline:2px solid var(--deep-teal);outline-offset:5px}
 .life-map[data-compass] .map-add{width:54px;height:54px;margin:-27px}
+/* 「新增」压在节点之上（orbit.js 还会让它避开节点），任何模式下都点得到 */
+.life-map[data-compass] #mapNodes>.map-add{z-index:5}
+.life-map[data-compass="c"] #mapNodes>.map-add{z-index:6}
+.compass-art.deco{pointer-events:none}
 
 /* 乙：背光面朝外的阴影；进入阴面时整体染一层青色 */
 .life-map[data-compass="b"] .map-node.orb:before,

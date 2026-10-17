@@ -33,7 +33,7 @@ def set_data_dir(path):
 set_data_dir(DATA_DIR)
 KEEP_BACKUPS = 30                 # 每天一份快照，保留最近 30 天
 MAX_BODY = 5 * 1024 * 1024        # 单次写入上限 5MB
-ALLOWED_KEYS = {"lf4-domains", "kongwo-records", "kongwo-paper", "kongwo-geo", "kongwo-cards", "kongwo-fw-v", "kongwo-compass-style", "kongwo-compass-speed", "kongwo-compass-motion"}
+ALLOWED_KEYS = {"lf4-domains", "kongwo-records", "kongwo-paper", "kongwo-geo", "kongwo-cards", "kongwo-fw-v", "kongwo-compass-style", "kongwo-compass-speed", "kongwo-compass-motion", "kongwo-compass-prefs"}
 
 _lock = threading.Lock()
 

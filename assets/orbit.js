@@ -7,7 +7,9 @@
    - 运行模式（同步 / 呼吸 / 星轨 / 潮汐 / 对转 / 摆荡，design/orbit-motion-options.html）与底图样式互相独立，可任意组合
    - 丙（浑天仪）的竖直子午圈也是一条可吸附轨道：在它上面的节点额外存 o: 'm'（a 为椭圆上的角度，r 仍是外圈的标准半径），
      旧数据没有 o，位置不变；甲、乙忽略 o，照 a / r 摆
-   - 样式选择存在 localStorage「kongwo-compass-style」，转速档位存在「kongwo-compass-speed」，运行模式存在「kongwo-compass-motion」 */
+   - 底图、运行模式、转速、各轨道方向按领域各自保存在 localStorage「kongwo-compass-prefs」：{ 领域 id: { style, motion, speed, dirs: { a: [..], b: [..], c: [.., 子午圈] } } }；
+     领域没有自己的设置时沿用旧的全局值「kongwo-compass-style / -speed / -motion」（只读不再写），再没有就用默认值；
+     领域 id 存在领域数据的 id 上，第一次改设置时才生成 */
 (function () {
   var map = document.getElementById('lifeMap');
   var box = document.getElementById('mapNodes');
@@ -22,6 +24,7 @@
   var STYLE_KEY = 'kongwo-compass-style';
   var SPEED_KEY = 'kongwo-compass-speed';
   var MOTION_KEY = 'kongwo-compass-motion';
+  var PREFS_KEY = 'kongwo-compass-prefs';
   /* 转速档位：键、字、倍率。倍率乘在公转时钟上，时钟 1 秒 = 设计稿（orbit-motion-options.html）滑块 ×1 时的 1 秒；
      「快」= 中 ×2；「极快」名义 ×5，但按模式封顶：节点峰值角速度不超过 PEAK_CAP（见 rateNow）。旧版存的键名不变，直接沿用 */
   var RATES = [['slow', '慢', .5], ['mid', '中', 1], ['fast', '快', 2], ['max', '极快', 5], ['stop', '停', 0]];
@@ -32,7 +35,7 @@
     ['breath', '呼吸', '壹 呼吸 · 一进一出：慢慢公转，同时沿半径一收一放，节点依次起伏'],
     ['kepler', '星轨', '贰 星轨 · 各安其位：像行星，内圈快、外圈慢（周期 ∝ 半径^1.5）'],
     ['tide', '潮汐', '叁 潮汐 · 张弛有度：整盘转速按 30 秒一周涨落，退潮时几乎停住'],
-    ['duet', '对转', '肆 阴阳对转 · 一顺一逆：相邻节点一顺时针、一逆时针'],
+    ['duet', '对转', '肆 阴阳对转 · 一顺一逆：相邻节点一顺一逆 —— 第 1、3、5 个节点按所在轨道设定的方向走，第 2、4、6 个反着走'],
     ['pendulum', '摆荡', '伍 摆荡 · 傅科摆：节点在本位左右摆动，本位极慢漂移，最容易点中']
   ];
   var NS = 'http://www.w3.org/2000/svg';
@@ -43,9 +46,8 @@
   if (!isFinite(clock) || clock < 0) clock = 0;
   var speed = reduce.matches ? 0 : 1;                             // 0..1，悬停时缓停
   var rate = 1, rateKey = 'mid';                                  // 用户选的转速档位（倍率乘在 speed 上）
-  try { RATES.forEach(function (q) { if (q[0] === localStorage.getItem(SPEED_KEY)) { rateKey = q[0]; rate = q[2]; } }); } catch (e) {}
   var motion = 'sync';
-  try { MOTIONS.forEach(function (q) { if (q[0] === localStorage.getItem(MOTION_KEY)) motion = q[0]; }); } catch (e) {}
+  var dirSet = {}, curDirs = [1, -1, 1, -1];                      // 当前领域各样式的轨道方向（未设的样式用默认）；当前样式实际生效的方向
   var drag = null, justDragged = false;
 
   /* ———— 三种样式的几何：knots 把标准半径映射到设计稿半径；orbits 为可吸附的轨道 ———— */
@@ -60,8 +62,6 @@
   };
   var ORDER = ['a', 'b', 'c'];
   var style = 'b', S = STYLES.b;
-  try { var saved0 = localStorage.getItem(STYLE_KEY); if (STYLES[saved0]) style = saved0; } catch (e) {}
-  S = STYLES[style];
 
   // 分段线性插值（xs 递增），超出两端时取端点值
   function interp(xs, ys, x) {
@@ -75,15 +75,22 @@
   function dMin() { return S.knots[0][1]; }
   function dMax() { return S.knots[S.knots.length - 1][1]; }
   function nearest(d) { var k = 0; S.orbits.forEach(function (o, i) { if (Math.abs(o - d) < Math.abs(S.orbits[k] - d)) k = i; }); return k; }
-  // 同步模式下某条轨道上的公转相位：内圈快、外圈慢；乙样式一顺一逆
+  // 各轨道方向：1 顺时针、-1 逆时针；丙多一项子午圈。默认甲 / 丙全顺，乙阳顺阴逆
+  function defDirs() { return S.dirs.concat(S.meridian ? [1] : []); }
+  function dirsOf() {
+    var def = defDirs(), u = dirSet[style];
+    return Array.isArray(u) && u.length === def.length ? u.map(function (v) { return v < 0 ? -1 : 1; }) : def;
+  }
+  function dirAt(d, mer) { return mer && S.meridian ? curDirs[S.orbits.length] : curDirs[nearest(d)]; }
+  // 同步模式下某条轨道上的公转相位：内圈快、外圈慢，方向按轨道设定
   function phaseAt(d) {
     var T = interp(S.orbits, S.periods, d);
-    return ((S.dirs[nearest(d)] * clock * 360 / T) % 360 + 360) % 360;
+    return ((curDirs[nearest(d)] * clock * 360 / T) % 360 + 360) % 360;
   }
   /* 运行模式：第 i 个节点、本位半径 d（设计稿单位）此刻的偏移 —— da 角度偏移、dd 半径偏移、dir 运动方向（0 = 往复）
      偏移只取决于 i、d 和时钟，与本位角度无关，所以拖动松手时可以反推本位 */
   function moved(i, d, mer) {
-    var t = clock, w, sd = style === 'b' ? S.dirs[nearest(d)] : 1;   // 乙：主旋转方向跟随轨道箭头（阳顺阴逆）
+    var t = clock, w, sd = dirAt(d, mer);   // 主旋转方向跟随所在轨道的设定（乙的轨道箭头同步显示）
     switch (motion) {
       case 'breath':     // 半径 ±20、8 秒一呼吸，相邻相位差 0.7；公转一圈 120 秒。贴近内外界时收窄幅度，不出罗盘
         var lo = Math.max(dMin() - 8, d - 20), hi = Math.min(mer ? S.meridian.ry : dMax(), d + 20);
@@ -93,14 +100,14 @@
       case 'tide':       // 倍率在 0.12～1.6 间 30 秒一周涨落（这里是它的积分）；外圈稍慢
         w = 2 * Math.PI * t / 30;
         return { da: norm(sd * 360 / 70 * (.86 * t - .74 * 30 / (2 * Math.PI) * Math.sin(w)) * interp([dMin(), dMax()], [1, .65], d)), dd: 0, dir: sd };
-      case 'duet':       // 相邻节点一顺一逆，50 秒一圈（乙：顺行的那个跟随轨道箭头，逆行的反之）
+      case 'duet':       // 相邻节点一顺一逆，50 秒一圈：双数序号的跟随轨道方向，单数序号的反之
         w = (i % 2 ? -1 : 1) * sd;
         return { da: norm(w * t * 360 / 50), dd: 0, dir: w };
       case 'pendulum':   // 本位 ±28°、8 秒一摆、相位错开 90°；本位每分钟漂移 6°
         return { da: norm(sd * t * .1 + 28 * Math.sin(2 * Math.PI * t / 8 - i * Math.PI / 2)), dd: 0, dir: 0, home: norm(sd * t * .1) };
     }
-    if (mer) return { da: norm(clock * 360 / S.meridian.period), dd: 0, dir: 1 };   // 子午圈按自己的周期绕行
-    return { da: phaseAt(d), dd: 0, dir: S.dirs[nearest(d)] };
+    if (mer) return { da: norm(sd * clock * 360 / S.meridian.period), dd: 0, dir: sd };   // 子午圈按自己的周期绕行
+    return { da: phaseAt(d), dd: 0, dir: sd };
   }
   // 各模式在 ×1 时的峰值角速度（度 / 秒），「极快」按它封顶
   function peak() {
@@ -231,8 +238,9 @@
     ticks(s, 226, 48, 4);
     dirs(s, 246);
     S.orbits.forEach(function (r, i) { svg('circle', { r: r, fill: 'none', stroke: i % 2 ? TEAL : INK, 'stroke-opacity': i % 2 ? .45 : .35, 'stroke-dasharray': i % 2 ? '1.5 4' : 'none' }, s); });
-    // 每条轨道一个小箭头标出顺逆
-    S.orbits.forEach(function (r, i) { var a = 200 + i * 8, q = pt(a, r); svg('path', { d: i % 2 ? 'M3,-3L-2,0L3,3' : 'M-3,-3L2,0L-3,3', fill: 'none', stroke: i % 2 ? TEAL : INK, 'stroke-opacity': .6, transform: 'translate(' + q[0] + ' ' + q[1] + ') rotate(' + a + ')' }, s); });
+    // 每条轨道一个小箭头标出顺逆（随方向设定更新，见 markArrows）
+    art.arrows = S.orbits.map(function (r, i) { var a = 200 + i * 8, q = pt(a, r); return svg('path', { fill: 'none', stroke: i % 2 ? TEAL : INK, 'stroke-opacity': .6, transform: 'translate(' + q[0] + ' ' + q[1] + ') rotate(' + a + ')' }, s); });
+    markArrows();
     svg('circle', { r: 64, fill: 'none', stroke: TEAL, 'stroke-opacity': .25, 'stroke-width': 10 }, s);
     svg('circle', { r: 58, fill: TEAL, stroke: PAPER, 'stroke-width': 4 }, s);
     svg('circle', { r: 62, fill: 'none', stroke: TEAL }, s);
@@ -262,11 +270,12 @@
     art.frame = function (t) { rot(tj, t * 7 / SLOW); };
   }
   var BUILD = { a: buildA, b: buildB, c: buildC };
+  function markArrows() { (art.arrows || []).forEach(function (p, i) { p.setAttribute('d', curDirs[i] < 0 ? 'M3,-3L-2,0L3,3' : 'M-3,-3L2,0L-3,3'); }); }
 
   function applyStyle(key) {
     art.layers.forEach(function (l) { l.remove(); });
     art = { layers: [], wash: 0, frame: null, trails: null };
-    style = key; S = STYLES[key];
+    style = key; S = STYLES[key]; curDirs = dirsOf();
     map.dataset.compass = key;
     BUILD[key]();
     art.deco = svg('g', {}, layer('deco'));
@@ -280,7 +289,8 @@
   function setStyle(key) {
     if (!STYLES[key] || key === style) return;
     applyStyle(key);
-    try { localStorage.setItem(STYLE_KEY, key); } catch (e) {}
+    savePrefs();
+    markDir();
     decorate();
   }
 
@@ -329,7 +339,7 @@
   }
   function setMotion(key) {
     motion = key;
-    try { localStorage.setItem(MOTION_KEY, key); } catch (e) {}
+    savePrefs();
     markMotion();
     addAng = null;
     layout();
@@ -345,11 +355,98 @@
   }
   function setRate(key) {
     RATES.forEach(function (q) { if (q[0] === key) { rateKey = key; rate = q[2]; } });
-    try { localStorage.setItem(SPEED_KEY, rateKey); } catch (e) {}
+    savePrefs();
     markRate();
   }
-  markRate();
-  markMotion();
+
+  /* ———— 轨道方向：停靠栏里「方向」按钮，点开左侧小面板，每条轨道一个 顺 / 逆 切换 ———— */
+  var dirBtn = document.createElement('button');
+  dirBtn.type = 'button'; dirBtn.className = 'compass-cycle compass-dir';
+  dirBtn.setAttribute('aria-haspopup', 'true'); dirBtn.setAttribute('aria-expanded', 'false');
+  dirBtn.innerHTML = '<small>方向</small><b></b>';
+  dock.appendChild(dirBtn);
+  var dirPanel = document.createElement('div');
+  dirPanel.className = 'compass-dirs'; dirPanel.hidden = true;
+  dirPanel.setAttribute('role', 'group'); dirPanel.setAttribute('aria-label', '各轨道运行方向');
+  dock.appendChild(dirPanel);
+  function orbitNames() {
+    var n = S.orbits.length, names = n === 3 ? ['内圈', '中圈', '外圈'] : ['一圈', '二圈', '三圈', '四圈'].slice(0, n);
+    return S.meridian ? names.concat('子午圈') : names;
+  }
+  function markDir() {
+    var def = defDirs(), same = curDirs.every(function (v, i) { return v === def[i]; });
+    dirBtn.querySelector('b').textContent = same ? '默认' : curDirs.every(function (v) { return v > 0; }) ? '全顺' : curDirs.every(function (v) { return v < 0; }) ? '全逆' : '自定';
+    dirBtn.title = '轨道方向（本领域 · ' + STYLES[style].name + '）：' + orbitNames().map(function (t, i) { return t + (curDirs[i] > 0 ? '顺' : '逆'); }).join(' ') + '\n点击展开，逐条切换顺 / 逆时针';
+    dirBtn.setAttribute('aria-label', '轨道方向：' + dirBtn.querySelector('b').textContent + '，点击展开');
+    dirPanel.innerHTML = '<p>轨道方向</p>' + orbitNames().map(function (t, i) {
+      var cw = curDirs[i] > 0;
+      return '<button type="button" data-k="' + i + '" aria-pressed="' + (cw ? 'false' : 'true') + '" title="' + t + '：' + (cw ? '顺时针，点击改为逆时针' : '逆时针，点击改为顺时针') + '"><span>' + t + '</span><b>' + (cw ? '↻ 顺' : '↺ 逆') + '</b></button>';
+    }).join('') + (same ? '' : '<button type="button" class="dirs-reset" data-reset title="恢复这个底图默认的方向">复原</button>');
+  }
+  function openDirs(on) {
+    dirPanel.hidden = !on; dirBtn.setAttribute('aria-expanded', on ? 'true' : 'false');
+    if (!on) trace(null);
+  }
+  // 改方向时屏幕上的节点不跳：先记下此刻显示的角度，换方向后反推本位
+  function setDirs(arr) {
+    var d = domains[active]; if (!d) return;
+    var shown = d.nodes.map(function (n, i) { var b = baseOf(n, i); return { b: b, a: b.a + moved(i, homeD(b), b.mer).da }; });
+    dirSet[style] = arr; curDirs = dirsOf();
+    d.nodes.forEach(function (n, i) { var b = shown[i].b; n.a = Math.round(norm(shown[i].a - moved(i, homeD(b), b.mer).da) * 10) / 10; n.r = b.r; });
+    saveDomains(); savePrefs();
+    markArrows(); markDir(); layout();
+  }
+  dirBtn.addEventListener('click', function () { openDirs(dirPanel.hidden); });
+  dirPanel.addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    if (b.hasAttribute('data-reset')) { setDirs(defDirs()); trace(null); return; }
+    var k = +b.dataset.k, arr = curDirs.slice(); arr[k] = -arr[k];
+    setDirs(arr);
+    var nb = dirPanel.querySelector('[data-k="' + k + '"]'); if (nb) nb.focus();
+  });
+  // 悬停某一行：在罗盘上描出那条轨道
+  dirPanel.addEventListener('mouseover', function (e) {
+    var b = e.target.closest('[data-k]'); if (!b) { trace(null); return; }
+    var k = +b.dataset.k, mer = k >= S.orbits.length; trace(mer ? S.meridian.ry : S.orbits[k], true, mer);
+  });
+  dirPanel.addEventListener('mouseleave', function () { trace(null); });
+  document.addEventListener('pointerdown', function (e) { if (!dirPanel.hidden && !dirPanel.contains(e.target) && !dirBtn.contains(e.target)) openDirs(false); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !dirPanel.hidden) { openDirs(false); dirBtn.focus(); } });
+
+  /* ———— 按领域保存 / 读取设置 ———— */
+  function readPrefs() {
+    try { var o = JSON.parse(localStorage.getItem(PREFS_KEY) || '{}'); return o && typeof o === 'object' && !Array.isArray(o) ? o : {}; } catch (e) { return {}; }
+  }
+  function getLS(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function pick(list, k) { return list.some(function (q) { return q[0] === k; }) ? k : null; }
+  // 切到当前领域自己的设置；没有的项沿用旧的全局值，再没有用默认
+  function loadPrefs() {
+    var d = domains[active], p = (d && d.id && readPrefs()[d.id]) || {};
+    var st = STYLES[p.style] ? p.style : STYLES[getLS(STYLE_KEY)] ? getLS(STYLE_KEY) : 'b';
+    motion = pick(MOTIONS, p.motion) || pick(MOTIONS, getLS(MOTION_KEY)) || 'sync';
+    rateKey = pick(RATES, p.speed) || pick(RATES, getLS(SPEED_KEY)) || 'mid';
+    RATES.forEach(function (q) { if (q[0] === rateKey) rate = q[2]; });
+    dirSet = p.dirs && typeof p.dirs === 'object' && !Array.isArray(p.dirs) ? p.dirs : {};
+    if (st !== style || !art.layers.length) applyStyle(st);
+    else { curDirs = dirsOf(); markArrows(); }
+    addAng = null;
+    markMotion(); markRate(); markDir();
+  }
+  // 只写当前领域（第一次写时给领域分配 id）；旧的全局 key 不再改，没有自己设置的领域照旧读它们
+  function savePrefs() {
+    var d = domains[active]; if (!d) return;
+    if (!d.id) {
+      var ids = domains.map(function (x) { return x.id; });
+      do { d.id = 'dm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); } while (ids.indexOf(d.id) >= 0);
+      saveDomains();
+    }
+    var all = readPrefs(), p = { style: style, motion: motion, speed: rateKey }, dirs = {};
+    Object.keys(dirSet).forEach(function (k) { if (STYLES[k] && Array.isArray(dirSet[k])) dirs[k] = dirSet[k]; });
+    if (Object.keys(dirs).length) p.dirs = dirs;
+    all[d.id] = p;
+    try { localStorage.setItem(PREFS_KEY, JSON.stringify(all)); } catch (e) {}
+  }
+
   switcher.addEventListener('click', function (e) {
     var b = e.target.closest('[data-compass]'); if (b) setStyle(b.dataset.compass);
   });
@@ -790,8 +887,8 @@
   });
 
   var _render = renderAll;
-  renderAll = function () { _render(); decorate(); };
-  applyStyle(style);
+  renderAll = function () { _render(); loadPrefs(); decorate(); };
+  loadPrefs();
   decorate();
   requestAnimationFrame(tick);
 })();

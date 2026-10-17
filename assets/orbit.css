@@ -84,28 +84,39 @@
 .modal-field select.modal-input{display:block;width:100%;height:auto;padding:8px;margin-top:4px}
 .map-add{transition:background .2s,border-color .2s,color .2s}
 
-/* ---- 罗盘右侧停靠栏：样式切换（甲 / 乙 / 丙）+ 运行模式按钮 + 转速按钮（后两个点击循环切换） ----
-   罗盘让出右侧 --sw 宽的一条（按钮 + 间距），停靠栏贴在罗盘方框外、靠下（节点环之下），不压在罗盘、节点、新增上 */
-.life-map[data-compass]{--sw:48px;--mw:min(435px,90%,calc(100% - var(--sw)));width:var(--mw);margin-left:calc((100% - var(--sw) - var(--mw)) / 2);margin-right:auto}
-/* 停靠栏贴罗盘主区域（.domain-detail）右边框：100cqw = 主区域内容宽，罗盘右侧留白 =（100cqw + --sw − 罗盘宽）/ 2，再加上主区域右内边距，离边框留 6px */
+/* ---- 罗盘右侧控制条：一条细线纸色竖条，内分「底图（甲 / 乙 / 丙）」「运行」「转速」三段（后两段点击循环切换） ----
+   罗盘让出右侧 --sw 宽的一条，控制条贴主区域右边框内侧、与罗盘垂直居中，离边框留 12px 呼吸；选中只用朱砂细标 + 墨青字，不做大块深色填充 */
+.life-map[data-compass]{--sw:58px;--mw:min(435px,90%,calc(100% - var(--sw)));width:var(--mw);margin-left:calc((100% - var(--sw) - var(--mw)) / 2);margin-right:auto}
+/* 100cqw = 主区域内容宽，罗盘右侧留白 =（100cqw + --sw − 罗盘宽）/ 2，再加上主区域右内边距，离边框留 12px */
 .domain-detail:has(> .life-map[data-compass]){container-type:inline-size;--dpad:20px}
-.life-map .compass-dock{position:absolute;left:auto;right:calc((100% - 100cqw - var(--sw)) / 2 - var(--dpad,20px) + 6px);bottom:0;z-index:6;display:flex;flex-direction:column;gap:8px}
-.life-map .compass-switch{display:flex;flex-direction:column;border:1px solid rgba(20,33,31,.38);border-radius:3px;background:rgba(244,239,228,.62);overflow:hidden}
-.life-map .compass-switch button{all:unset;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;width:36px;height:34px;cursor:pointer;font-family:var(--font-brand);color:var(--ink-primary);transition:background .2s,color .2s}
-.life-map .compass-switch button+button{border-top:1px dashed rgba(20,33,31,.28)}
+.life-map .compass-dock{position:absolute;left:auto;right:calc((100% - 100cqw - var(--sw)) / 2 - var(--dpad,20px) + 12px);top:50%;transform:translateY(-50%);z-index:6;display:flex;flex-direction:column;width:40px;padding:5px 0;border:1px solid rgba(20,33,31,.2);border-radius:2px;background:rgba(244,239,228,.58);box-shadow:0 1px 0 rgba(255,255,255,.5) inset}
+/* 上下各一道短轴线，呼应罗盘十字 */
+.life-map .compass-dock:before,.life-map .compass-dock:after{content:"";position:absolute;left:50%;width:1px;height:8px;background:rgba(20,33,31,.28)}
+.life-map .compass-dock:before{top:-9px}
+.life-map .compass-dock:after{bottom:-9px}
+/* 段与段之间：两端留白的细分隔线 */
+.life-map .compass-dock>*+*{position:relative;margin-top:5px;padding-top:5px}
+.life-map .compass-dock>*+*:before{content:"";position:absolute;top:0;left:9px;right:9px;height:1px;background:rgba(20,33,31,.16)}
+/* 底图段：小标题 + 甲乙丙竖排 */
+.life-map .compass-switch{display:flex;flex-direction:column;align-items:stretch}
+.life-map .compass-switch:after{content:"底图";order:-1;display:block;text-align:center;font:8.5px/1 var(--font-brand);letter-spacing:.12em;text-indent:.12em;color:var(--ink-secondary);opacity:.8;margin:2px 0 3px}
+.life-map .compass-switch button{all:unset;box-sizing:border-box;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:32px;cursor:pointer;font-family:var(--font-brand);color:rgba(20,33,31,.55);transition:color .2s,background .2s}
 .life-map .compass-switch b{display:block;font-size:14px;font-weight:700;line-height:1}
-.life-map .compass-switch small{display:block;font-size:9px;line-height:1;margin-top:4px;letter-spacing:.04em;color:var(--ink-secondary)}
-.life-map .compass-switch button:hover{background:rgba(12,69,75,.09)}
-.life-map .compass-switch button[aria-checked="true"]{background:var(--deep-teal);color:#f4efe3}
-.life-map .compass-switch button[aria-checked="true"] b{color:#f4efe3}
-.life-map .compass-switch button[aria-checked="true"] small{color:rgba(244,239,227,.82)}
-.life-map .compass-switch button:focus-visible{outline:2px solid var(--cinnabar);outline-offset:-3px}
-/* 运行模式 / 转速：小字标题 + 当前档位 */
-.life-map .compass-cycle{all:unset;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;width:38px;height:38px;cursor:pointer;font-family:var(--font-brand);border:1px solid rgba(20,33,31,.3);border-radius:3px;background:rgba(244,239,228,.55);transition:background .2s,border-color .2s}
-.life-map .compass-cycle small{display:block;font-size:8.5px;line-height:1;letter-spacing:.06em;color:var(--ink-secondary)}
-.life-map .compass-cycle b{display:block;margin-top:4px;font-size:12.5px;font-weight:700;line-height:1;white-space:nowrap;color:var(--deep-teal)}
-.life-map .compass-cycle:hover{background:rgba(12,69,75,.09);border-color:rgba(20,33,31,.45)}
-.life-map .compass-cycle:focus-visible{outline:2px solid var(--cinnabar);outline-offset:1px}
+.life-map .compass-switch small{display:block;font-size:8px;line-height:1;margin-top:3px;letter-spacing:.06em;color:var(--ink-secondary);opacity:.75}
+.life-map .compass-switch button:hover{color:var(--ink-primary);background:rgba(12,69,75,.05)}
+.life-map .compass-switch button[aria-checked="true"]{color:var(--deep-teal)}
+.life-map .compass-switch button[aria-checked="true"] small{opacity:1;color:var(--deep-teal)}
+/* 选中：左缘一道朱砂短竖 */
+.life-map .compass-switch button[aria-checked="true"]:before{content:"";position:absolute;left:0;top:7px;bottom:7px;width:2px;background:var(--cinnabar)}
+.life-map .compass-switch button:focus-visible{outline:1px solid var(--cinnabar);outline-offset:-3px}
+/* 运行 / 转速段：小标题 + 当前档位 */
+.life-map .compass-cycle{all:unset;box-sizing:border-box;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;min-height:36px;cursor:pointer;font-family:var(--font-brand);transition:background .2s}
+.life-map .compass-dock>.compass-cycle{margin-top:5px;padding-top:7px;padding-bottom:2px}
+.life-map .compass-cycle small{display:block;font-size:8.5px;line-height:1;letter-spacing:.12em;text-indent:.12em;color:var(--ink-secondary);opacity:.8}
+.life-map .compass-cycle b{display:block;margin-top:5px;font-size:13px;font-weight:700;line-height:1;white-space:nowrap;color:var(--deep-teal)}
+.life-map .compass-cycle:hover{background:rgba(12,69,75,.05)}
+.life-map .compass-cycle:hover b{color:var(--cinnabar)}
+.life-map .compass-cycle:focus-visible{outline:1px solid var(--cinnabar);outline-offset:-3px}
 .life-map .compass-speed[data-rate="stop"] b{color:var(--cinnabar)}
 
 /* 阴阳对转：逆行的节点为阴，染成青色 */
@@ -118,10 +129,16 @@
   .life-map[data-compass] .map-node.orb b{font-size:11px}
   .life-map[data-compass] .map-node.orb small{font-size:7.5px}
   .life-map[data-compass]{--sw:40px;--mw:min(360px,94%,calc(100% - var(--sw)))}
-  .life-map .compass-dock{left:calc(100% + 8px);right:auto;gap:6px}
-  .life-map .compass-switch button{width:30px;height:30px}
+  .life-map .compass-dock{left:calc(100% + 6px);right:auto;width:30px;padding:3px 0}
+  .life-map .compass-dock:before,.life-map .compass-dock:after{display:none}
+  .life-map .compass-dock>*+*{margin-top:3px;padding-top:3px}
+  .life-map .compass-dock>*+*:before{left:6px;right:6px}
+  .life-map .compass-switch:after{display:none}
+  .life-map .compass-switch button{height:28px}
   .life-map .compass-switch small{display:none}
-  .life-map .compass-cycle{width:32px;height:32px}
+  .life-map .compass-switch button[aria-checked="true"]:before{top:6px;bottom:6px}
+  .life-map .compass-cycle{min-height:28px}
+  .life-map .compass-dock>.compass-cycle{margin-top:3px;padding:3px 0 0}
   .life-map .compass-cycle small{display:none}
   .life-map .compass-cycle b{margin-top:0;font-size:11px}
 }

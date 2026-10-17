@@ -9,7 +9,7 @@ const domains=[
 /* —— 领域数据可编辑化：统一条目结构 + 本地持久化 ——
    nodes:{t,s}  principles:{t,s}  practices:{t,cad,done}（兼容旧的字符串/数组写法） */
 function normDomain(d){
-  d.nodes=(d.nodes||[]).map(n=>Array.isArray(n)?{t:n[0]||'',s:n[1]||''}:Object.assign({t:(n&&n.t)||'',s:(n&&n.s)||''},n&&n.id?{id:n.id}:{},n&&typeof n.a==='number'?{a:n.a}:{},n&&typeof n.r==='number'?{r:n.r}:{}));
+  d.nodes=(d.nodes||[]).map(n=>Array.isArray(n)?{t:n[0]||'',s:n[1]||''}:Object.assign({t:(n&&n.t)||'',s:(n&&n.s)||''},n&&n.id?{id:n.id}:{},n&&typeof n.a==='number'?{a:n.a}:{},n&&typeof n.r==='number'?{r:n.r}:{},n&&n.o==='m'?{o:'m'}:{}));
   d.principles=(d.principles||[]).map((p,i)=>typeof p==='string'?{t:p,s:i?'选择更长期有益的生活方式。':'没有健康，一切归零。'}:{t:(p&&p.t)||'',s:(p&&p.s)||''});
   d.practices=(d.practices||[]).map((p,i)=>typeof p==='string'?{t:p,cad:i?'每日 · 长期':'每周 · 长期',done:i<2}:{t:(p&&p.t)||'',cad:(p&&p.cad)||'每周 · 长期',done:!!(p&&p.done)});
 }
@@ -228,7 +228,7 @@ function nodeModal(i){
 function moveNode(i,to){
   const from=domains[active],dest=domains[to];if(!dest||to===active)return false;
   if(dest.nodes.length>=6){toast('「'+dest.name+'」已有 6 个节点，请先腾出位置');return false}
-  const n=from.nodes.splice(i,1)[0];delete n.a;delete n.r;dest.nodes.push(n);
+  const n=from.nodes.splice(i,1)[0];delete n.a;delete n.r;delete n.o;dest.nodes.push(n);
   saveDomains();renderAll();toast('「'+n.t+'」已移到「'+dest.name+'」');return true;
 }
 function confirmDel(what,fn){showModal('删除'+what,`<p class="empty-state">确定删除这个${what}吗？删除后不可恢复。</p>`,()=>{fn();toast('已删除')})}

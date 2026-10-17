@@ -5,6 +5,8 @@
    - 节点按所在轨道公转，内快外慢；鼠标压在节点上时减速停下，方便点击（指针静止几秒后自动恢复）
    - 拖动节点到新位置，靠近轨道时自动吸附；松手即保存
    - 运行模式（同步 / 呼吸 / 星轨 / 潮汐 / 对转 / 摆荡，design/orbit-motion-options.html）与底图样式互相独立，可任意组合
+   - 丙（浑天仪）的竖直子午圈也是一条可吸附轨道：在它上面的节点额外存 o: 'm'（a 为椭圆上的角度，r 仍是外圈的标准半径），
+     旧数据没有 o，位置不变；甲、乙忽略 o，照 a / r 摆
    - 样式选择存在 localStorage「kongwo-compass-style」，转速档位存在「kongwo-compass-speed」，运行模式存在「kongwo-compass-motion」 */
 (function () {
   var map = document.getElementById('lifeMap');
@@ -53,7 +55,7 @@
     b: { name: '阴阳昼夜', knots: [[104, 96], [119, 130], [137.5, 164], [156, 198], [172, 200]], orbits: [96, 130, 164, 198], periods: [60, 80, 105, 135], dirs: [1, -1, 1, -1],
          seat: function (i) { var k = [0, 1, 1, 2, 2, 3][i % 6]; return { k: k, a: i * 61 + k * 30 }; } },
     c: { name: '浑天仪', knots: [[104, 118], [119, 162], [156, 204], [172, 210]], orbits: [118, 162, 204], periods: [45, 70, 100], dirs: [1, 1, 1],
-         ry: [44, 60, 78], tilt: [-20, 15, -5], ellipse: true,
+         ry: [44, 60, 78], tilt: [-20, 15, -5], ellipse: true, meridian: { rx: 34, ry: 204, period: 90 },
          seat: function (i) { return { k: i % 3, a: i * 70 + 90 }; } }
   };
   var ORDER = ['a', 'b', 'c'];
@@ -80,11 +82,11 @@
   }
   /* 运行模式：第 i 个节点、本位半径 d（设计稿单位）此刻的偏移 —— da 角度偏移、dd 半径偏移、dir 运动方向（0 = 往复）
      偏移只取决于 i、d 和时钟，与本位角度无关，所以拖动松手时可以反推本位 */
-  function moved(i, d) {
+  function moved(i, d, mer) {
     var t = clock, w, sd = style === 'b' ? S.dirs[nearest(d)] : 1;   // 乙：主旋转方向跟随轨道箭头（阳顺阴逆）
     switch (motion) {
       case 'breath':     // 半径 ±20、8 秒一呼吸，相邻相位差 0.7；公转一圈 120 秒。贴近内外界时收窄幅度，不出罗盘
-        var lo = Math.max(dMin() - 8, d - 20), hi = Math.min(dMax(), d + 20);
+        var lo = Math.max(dMin() - 8, d - 20), hi = Math.min(mer ? S.meridian.ry : dMax(), d + 20);
         return { da: norm(sd * t * 3), dd: (lo + hi) / 2 - d + (hi - lo) / 2 * Math.sin(2 * Math.PI * t / 8 - i * .7), dir: sd };
       case 'kepler':     // 开普勒：周期 = 24 秒 ×（d / 96）^1.5
         return { da: norm(sd * t * 360 / (24 * Math.pow(d / 96, 1.5))), dd: 0, dir: sd };
@@ -97,6 +99,7 @@
       case 'pendulum':   // 本位 ±28°、8 秒一摆、相位错开 90°；本位每分钟漂移 6°
         return { da: norm(sd * t * .1 + 28 * Math.sin(2 * Math.PI * t / 8 - i * Math.PI / 2)), dd: 0, dir: 0, home: norm(sd * t * .1) };
     }
+    if (mer) return { da: norm(clock * 360 / S.meridian.period), dd: 0, dir: 1 };   // 子午圈按自己的周期绕行
     return { da: phaseAt(d), dd: 0, dir: S.dirs[nearest(d)] };
   }
   // 各模式在 ×1 时的峰值角速度（度 / 秒），「极快」按它封顶
@@ -111,37 +114,41 @@
     return 360 / Math.min.apply(null, S.periods);
   }
   function rateNow() { return rateKey === 'max' ? Math.min(rate, PEAK_CAP / peak()) : rate; }
-  // 浑天仪：半径 d 处的椭圆（rx = d，ry 与倾角按轨道插值）
-  function shape(d) {
+  // 浑天仪：半径 d 处的椭圆（rx = d，ry 与倾角按轨道插值）；mer = 子午圈，d 是它的竖半轴，横半轴按比例缩
+  function shape(d, mer) {
+    if (mer && S.meridian) return { rx: S.meridian.rx * d / S.meridian.ry, ry: d, tilt: 0 };
     if (!S.ellipse) return { rx: d, ry: d, tilt: 0 };
     var ratio = interp(S.orbits, S.ry.map(function (y, i) { return y / S.orbits[i]; }), d);
     return { rx: d, ry: d * ratio, tilt: interp(S.orbits, S.tilt, d) };
   }
   // 屏幕角度（0=上，顺时针）+ 设计稿半径 → 坐标（设计稿单位，原点在中心）与纵深
-  function point(ang, d) {
+  // 子午圈是竖着的环：右半在前、左半在后，上下两极在侧面
+  function point(ang, d, mer) {
     if (!S.ellipse) { var t = ang * Math.PI / 180; return { x: Math.sin(t) * d, y: -Math.cos(t) * d, depth: 0 }; }
-    var e = shape(d), th = (ang - 90) * Math.PI / 180, tl = e.tilt * Math.PI / 180;
+    var e = shape(d, mer), th = (ang - 90) * Math.PI / 180, tl = e.tilt * Math.PI / 180;
     var x = e.rx * Math.cos(th), y = e.ry * Math.sin(th);
-    return { x: x * Math.cos(tl) - y * Math.sin(tl), y: x * Math.sin(tl) + y * Math.cos(tl), depth: Math.sin(th) };
+    return { x: x * Math.cos(tl) - y * Math.sin(tl), y: x * Math.sin(tl) + y * Math.cos(tl), depth: mer ? Math.cos(th) : Math.sin(th) };
   }
 
   function hash(s) { var h = 0; s = String(s || ''); for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); }
   function nodeEls() { return box.querySelectorAll('.map-node'); }
   function baseOf(n, i) {
     var st = S.seat(i);
-    return { a: typeof n.a === 'number' ? n.a : st.a, r: typeof n.r === 'number' ? n.r : toR(S.orbits[st.k]) };
+    return { a: typeof n.a === 'number' ? n.a : st.a, r: typeof n.r === 'number' ? n.r : toR(S.orbits[st.k]), mer: isMer(n) };
   }
+  function isMer(n) { return !!(S.meridian && n && n.o === 'm'); }
+  function homeD(b) { return b.mer ? S.meridian.ry : toD(b.r); }      // 本位半径（设计稿单位）；子午圈上取它的竖半轴
   function norm(a) { return (a % 360 + 360) % 360; }
 
   // 把节点摆到屏幕角度 ang、设计稿半径 d 处（不含公转相位）
-  function placeAt(el, ang, d) {
-    var p = point(ang, d);
+  function placeAt(el, ang, d, mer) {
+    var p = point(ang, d, mer);
     el.style.left = (50 + p.x / D * 100) + '%';
     el.style.top = (50 + p.y / D * 100) + '%';
     if (S.ellipse) {
       // 转到后方变小变淡、被太极球遮住；前方变大
-      var f = (p.depth + 1) / 2;
-      el.style.setProperty('--k', (.74 + .26 * f).toFixed(3));
+      var f = (p.depth + 1) / 2, pole = mer ? 1 - .16 * (1 - p.depth * p.depth) : 1;   // 子午圈两极再缩一点，不压外圈和上 / 下字
+      el.style.setProperty('--k', ((.74 + .26 * f) * pole).toFixed(3));
       el.style.setProperty('--dop', (.5 + .5 * f).toFixed(2));
       el.classList.toggle('is-front', p.depth > 0);
       el.classList.toggle('is-back', p.depth <= 0);
@@ -243,7 +250,7 @@
     svg('circle', { r: 219, fill: 'none', stroke: INK, 'stroke-opacity': .25 }, s);
     ticks(s, 226, 72, 6);
     dirs(s, 246);
-    svg('ellipse', { rx: 34, ry: 204, fill: 'none', stroke: INK, 'stroke-opacity': .18 }, s);   // 子午圈
+    svg('ellipse', { rx: S.meridian.rx, ry: S.meridian.ry, fill: 'none', stroke: INK, 'stroke-opacity': .22 }, s);   // 子午圈（可吸附）
     S.orbits.forEach(function (rx, i) {
       var ry = S.ry[i], g = 'rotate(' + S.tilt[i] + ')';
       svg('path', { d: 'M' + -rx + ',0A' + rx + ' ' + ry + ' 0 0 1 ' + rx + ',0', fill: 'none', stroke: INK, 'stroke-opacity': .22, 'stroke-dasharray': '2 4', transform: g }, s);
@@ -410,7 +417,8 @@
     ms.forEach(function (m, i) {
       if (!m) { off[i] = 0; offA[i] = 0; return; }
       var g = Math.max(-AVOID_MAX, Math.min(AVOID_MAX, tgt[i]));
-      g = Math.max(dMin() - 6, Math.min(dMax() + 6, m.d + g)) - m.d;   // 不出罗盘、不压中心
+      g = m.mer ? Math.max(S.meridian.ry - 30, Math.min(S.meridian.ry, m.d + g)) - m.d     // 子午圈：只往里让，两极不顶出罗盘
+                : Math.max(dMin() - 6, Math.min(dMax() + 6, m.d + g)) - m.d;   // 不出罗盘、不压中心
       off[i] = dt == null || off[i] == null ? g : off[i] + (g - off[i]) * Math.min(1, dt * 4);
       m.d += off[i];
       var ga = Math.max(-AVOID_ANG, Math.min(AVOID_ANG, tga[i]));
@@ -425,15 +433,15 @@
     els.forEach(function (el, i) {
       var n = d.nodes[i]; if (!n) return;
       if (drag && drag.el === el) { off[i] = 0; return; }
-      var b = baseOf(n, i), m = moved(i, toD(b.r)); m.home0 = b.a;
-      m.ang = b.a + m.da; m.d = toD(b.r) + m.dd; var p = point(m.ang, m.d); m.x = p.x; m.y = p.y;
+      var b = baseOf(n, i), hd = homeD(b), m = moved(i, hd, b.mer); m.home0 = b.a; m.mer = b.mer;
+      m.ang = b.a + m.da; m.d = hd + m.dd; var p = point(m.ang, m.d, m.mer); m.x = p.x; m.y = p.y;
       ms[i] = m;
     });
     avoid(ms, dt);
     els.forEach(function (el, i) {
       var m = ms[i], tr = trails[i];
       if (!m) { if (tr) tr.setAttribute('stroke-opacity', 0); return; }
-      placeAt(el, m.ang, m.d); var p = point(m.ang, m.d); m.x = p.x; m.y = p.y;
+      placeAt(el, m.ang, m.d, m.mer); var p = point(m.ang, m.d, m.mer); m.x = p.x; m.y = p.y;
       el.classList.toggle('is-yin', motion === 'duet' && m.dir < 0);
       if (tr) {
         // 墨色轨迹拖在运动方向的后面；摆荡模式不画，星轨模式改用渐淡尾迹（见 deco）
@@ -451,8 +459,14 @@
     // 其它模式下节点快慢不一：「新增」在默认轨道上找离所有节点（含拖动中的）最远的位置，缓缓滑过去；
     // 当前位置仍够宽敞就不挪，免得来回追
     var R0 = toD(R_HOME / VIEW), need = nodeSize() * 1.15, pts = ms.filter(Boolean);
-    if (drag && drag.pos) pts.push(point(drag.pos.a, drag.pos.d));
-    var clear = function (a) { var q = point(a, R0), c = Infinity; pts.forEach(function (p) { c = Math.min(c, Math.hypot(p.x - q.x, p.y - q.y)); }); return c; };
+    if (drag && drag.pos) pts.push(point(drag.pos.a, drag.pos.d, drag.pos.mer));
+    var zone = centerZone(add);
+    var clear = function (a) {
+      var q = point(a, R0), c = Infinity; pts.forEach(function (p) { c = Math.min(c, Math.hypot(p.x - q.x, p.y - q.y)); });
+      // 中心领域名当作禁区：按钮与名称框有交叠就算不可用
+      if (zone && q.x > zone.l && q.x < zone.r && q.y > zone.t && q.y < zone.b) c = -1;
+      return c;
+    };
     if (addAng == null || clear(addAng) < need) {
       var best = addAng == null ? 0 : addAng, bc = -1;
       for (var g = 0; g < 360; g += 4) { var c = clear(g) - (addAng == null ? 0 : Math.abs(norm(g - addAng + 180) - 180) * .05); if (c > bc) { bc = c; best = g; } }
@@ -462,7 +476,17 @@
     addAng += (norm(addGoal - addAng + 180) - 180) * Math.min(1, (dt || .016) * 6);
     placeAt(add, addAng, R0);
   }
-  var addAng = null, addGoal = 0;
+  var addAng = null, addGoal = 0, zoneKey = '', zoneVal = null;
+  // 中心领域名的范围（设计稿单位，已按「新增」按钮半径外扩）；样式、宽度、名称不变就复用
+  function centerZone(add) {
+    var b = map.querySelector('.map-center b'); if (!b) return null;
+    var key = style + '|' + map.clientWidth + '|' + b.textContent;
+    if (key === zoneKey) return zoneVal;
+    var mr = map.getBoundingClientRect(), r = b.getBoundingClientRect(), k = D / (mr.width || 1), h = (add.offsetWidth || 40) / 2 + 4;
+    zoneKey = key;
+    zoneVal = r.width ? { l: (r.left - mr.left - h) * k - D / 2, r: (r.right - mr.left + h) * k - D / 2, t: (r.top - mr.top - h) * k - D / 2, b: (r.bottom - mr.top + h) * k - D / 2 } : null;
+    return zoneVal;
+  }
 
   /* ———— 运行模式的装饰（SVG，水墨淡笔，pointer-events:none）：每种样式重建一次图层，切模式时清空重画 ————
      呼吸：中心气环随呼吸胀缩 + 吸 / 呼；星轨：渐淡墨色尾迹 + 近乎一线时的朱砂细虚线；
@@ -495,14 +519,14 @@
     } else if (motion === 'pendulum') {
       P.rods = []; P.arcs = [];
       for (k = 0; k < n; k++) {
-        P.arcs.push(svg('path', { fill: 'none', stroke: INK, 'stroke-width': .8, 'stroke-opacity': .2, 'stroke-dasharray': '1.5 3' }, g));
-        P.rods.push(svg('line', { stroke: INK, 'stroke-width': .8, 'stroke-opacity': .22 }, g));
+        P.arcs.push(svg('path', { fill: 'none', stroke: INK, 'stroke-width': 1, 'stroke-opacity': .38, 'stroke-dasharray': '2 3' }, g));
+        P.rods.push(svg('line', { stroke: INK, 'stroke-width': 1, 'stroke-opacity': .4 }, g));
       }
     }
   }
-  function arcPath(a0, a1, d) {
+  function arcPath(a0, a1, d, mer) {
     var s = '', n = Math.max(2, Math.ceil(Math.abs(a1 - a0) / 3));
-    for (var k = 0; k <= n; k++) { var p = point(a0 + (a1 - a0) * k / n, d); s += (k ? 'L' : 'M') + p.x.toFixed(1) + ',' + p.y.toFixed(1); }
+    for (var k = 0; k <= n; k++) { var p = point(a0 + (a1 - a0) * k / n, d, mer); s += (k ? 'L' : 'M') + p.x.toFixed(1) + ',' + p.y.toFixed(1); }
     return s;
   }
   function drawDeco(ms) {
@@ -520,7 +544,7 @@
         seg.forEach(function (s, j) {
           if (!m) { s.setAttribute('d', ''); return; }
           var a0 = m.ang - m.dir * (8 + j * 5), a1 = a0 - m.dir * 5;   // 节点身后（半径约 4°）起，每段 5°
-          s.setAttribute('d', arcPath(a0, a1, m.d));
+          s.setAttribute('d', arcPath(a0, a1, m.d, m.mer));
         });
       });
       // 两节点（不同半径）与中心近乎一线：中心到外侧节点画朱砂细虚线，越正越清楚
@@ -559,8 +583,8 @@
         if (!m) { rod.setAttribute('stroke-opacity', 0); arc.setAttribute('d', ''); return; }
         var s0 = point(m.ang, CORE[style][0] + 4), h = m.home0 + m.home;
         rod.setAttribute('x1', s0.x.toFixed(1)); rod.setAttribute('y1', s0.y.toFixed(1));
-        rod.setAttribute('x2', m.x.toFixed(1)); rod.setAttribute('y2', m.y.toFixed(1)); rod.setAttribute('stroke-opacity', .22);
-        arc.setAttribute('d', arcPath(h - 28, h + 28, m.d));
+        rod.setAttribute('x2', m.x.toFixed(1)); rod.setAttribute('y2', m.y.toFixed(1)); rod.setAttribute('stroke-opacity', .4);
+        arc.setAttribute('d', arcPath(h - 28, h + 28, m.d, m.mer));
       });
     }
   }
@@ -656,13 +680,20 @@
         if (dist < near) { near = dist; a = a0 + g; }
       }
     }
+    // 丙：竖直子午圈 —— 指针离它（屏幕距离）在 SNAP 内、且比离吸附到的椭圆轨道更近，就吸到子午圈上
+    if (S.meridian) {
+      var M = S.meridian, mb = Infinity, ma = 0, od = snapped ? Math.hypot(point(a, d).x - x, point(a, d).y - y) : Infinity;
+      for (var h = 0; h < 360; h += 1) { var mp = point(h, M.ry, true), md = Math.hypot(mp.x - x, mp.y - y); if (md < mb) { mb = md; ma = h; } }
+      for (var h2 = ma - 1; h2 <= ma + 1; h2 += .1) { var mp2 = point(h2, M.ry, true), md2 = Math.hypot(mp2.x - x, mp2.y - y); if (md2 < mb) { mb = md2; ma = h2; } }
+      if (mb < SNAP && mb < od) return { a: ma, d: M.ry, r: toR(M.ry), ring: M.ry, mer: true };
+    }
     return { a: a, d: d, r: toR(d), ring: snapped };
   }
-  function trace(d, ring) {
+  function trace(d, ring, mer) {
     var g = map.querySelector('.orbit-trace');
     if (!g) { g = document.createElement('i'); g.className = 'orbit-trace'; map.appendChild(g); }
     if (d == null) { g.remove(); return; }
-    var e = shape(d);
+    var e = shape(d, mer);
     g.style.width = (e.rx * 2 / D * 100) + '%';
     g.style.height = (e.ry * 2 / D * 100) + '%';
     g.style.transform = 'translate(-50%,-50%) rotate(' + e.tilt + 'deg)';
@@ -686,8 +717,8 @@
     }
     e.preventDefault();
     var p = toPolar(e); drag.pos = p;
-    placeAt(drag.el, p.a, p.d);
-    trace(p.d, p.ring);
+    placeAt(drag.el, p.a, p.d, p.mer);
+    trace(p.d, p.ring, p.mer);
     // 拖到左边的领域列表上 → 松手即移过去
     var over = document.elementFromPoint(e.clientX, e.clientY);
     var dom = over && over.closest && over.closest('.domain');
@@ -719,10 +750,11 @@
       // 同领域其它节点也落定当前位置，之后增删节点不会让它们跳位
       domains[active].nodes.forEach(function (m, k) { var b = baseOf(m, k); m.a = norm(b.a); m.r = b.r; });
       // 松手处就是屏幕上的位置：扣掉运行模式此刻的偏移，反推本位（吸附到轨道时本位就是那条轨道）
-      var hd = dr.pos.d;
+      var hd = dr.pos.d, mer = !!dr.pos.mer;
       if (!dr.pos.ring) hd = Math.max(dMin(), Math.min(dMax(), hd - moved(dr.i, hd).dd));
-      n.a = Math.round(norm(dr.pos.a - moved(dr.i, hd).da) * 10) / 10;
+      n.a = Math.round(norm(dr.pos.a - moved(dr.i, hd, mer).da) * 10) / 10;
       n.r = Math.round(toR(hd) * 10000) / 10000;
+      if (mer) n.o = 'm'; else delete n.o;
       saveDomains();
     }
     layout();
@@ -750,10 +782,10 @@
     if (!e.shiftKey || !/^Arrow/.test(e.key)) return;
     var el = e.target.closest('.map-node'); if (!el) return;
     var i = [].indexOf.call(nodeEls(), el), n = domains[active].nodes[i]; if (!n) return;
-    var b = baseOf(n, i), shown = b.a + moved(i, toD(b.r)).da;
+    var b = baseOf(n, i), shown = b.a + moved(i, homeD(b), b.mer).da;
     if (e.key === 'ArrowLeft') shown -= 5; else if (e.key === 'ArrowRight') shown += 5;
-    else b.r = Math.max(R_MIN / VIEW, Math.min(R_MAX / VIEW, b.r + (e.key === 'ArrowUp' ? 1 : -1) * 4 / VIEW));
-    n.a = Math.round(norm(shown - moved(i, toD(b.r)).da) * 10) / 10; n.r = Math.round(b.r * 10000) / 10000;
+    else { b.r = Math.max(R_MIN / VIEW, Math.min(R_MAX / VIEW, b.r + (e.key === 'ArrowUp' ? 1 : -1) * 4 / VIEW)); b.mer = false; delete n.o; }   // 换内外即离开子午圈
+    n.a = Math.round(norm(shown - moved(i, homeD(b), b.mer).da) * 10) / 10; n.r = Math.round(b.r * 10000) / 10000;
     e.preventDefault(); saveDomains(); layout();
   });
 

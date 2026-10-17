@@ -87,7 +87,9 @@
 /* ---- 罗盘右侧停靠栏：样式切换（甲 / 乙 / 丙）+ 运行模式按钮 + 转速按钮（后两个点击循环切换） ----
    罗盘让出右侧 --sw 宽的一条（按钮 + 间距），停靠栏贴在罗盘方框外、靠下（节点环之下），不压在罗盘、节点、新增上 */
 .life-map[data-compass]{--sw:48px;--mw:min(435px,90%,calc(100% - var(--sw)));width:var(--mw);margin-left:calc((100% - var(--sw) - var(--mw)) / 2);margin-right:auto}
-.life-map .compass-dock{position:absolute;left:calc(100% + 10px);bottom:0;z-index:6;display:flex;flex-direction:column;gap:8px}
+/* 停靠栏贴罗盘主区域（.domain-detail）右边框：100cqw = 主区域内容宽，罗盘右侧留白 =（100cqw + --sw − 罗盘宽）/ 2，再加上主区域右内边距，离边框留 6px */
+.domain-detail:has(> .life-map[data-compass]){container-type:inline-size;--dpad:20px}
+.life-map .compass-dock{position:absolute;left:auto;right:calc((100% - 100cqw - var(--sw)) / 2 - var(--dpad,20px) + 6px);bottom:0;z-index:6;display:flex;flex-direction:column;gap:8px}
 .life-map .compass-switch{display:flex;flex-direction:column;border:1px solid rgba(20,33,31,.38);border-radius:3px;background:rgba(244,239,228,.62);overflow:hidden}
 .life-map .compass-switch button{all:unset;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;width:36px;height:34px;cursor:pointer;font-family:var(--font-brand);color:var(--ink-primary);transition:background .2s,color .2s}
 .life-map .compass-switch button+button{border-top:1px dashed rgba(20,33,31,.28)}
@@ -116,7 +118,7 @@
   .life-map[data-compass] .map-node.orb b{font-size:11px}
   .life-map[data-compass] .map-node.orb small{font-size:7.5px}
   .life-map[data-compass]{--sw:40px;--mw:min(360px,94%,calc(100% - var(--sw)))}
-  .life-map .compass-dock{left:calc(100% + 8px);gap:6px}
+  .life-map .compass-dock{left:calc(100% + 8px);right:auto;gap:6px}
   .life-map .compass-switch button{width:30px;height:30px}
   .life-map .compass-switch small{display:none}
   .life-map .compass-cycle{width:32px;height:32px}

@@ -170,3 +170,21 @@
   .life-map[data-compass="b"] .map-node.orb:after,
   .life-map[data-compass] .map-node.orb{transition:none}
 }
+
+/* ---- 精确定位：拖动 / 键盘微调时的读数（罗盘右上角，节点到不了的方框角落）与朱砂对齐辅助线 ---- */
+.orbit-readout{
+  position:absolute;right:0;top:0;z-index:7;pointer-events:none;
+  min-width:118px;padding:5px 8px 5px 9px;text-align:right;
+  font:11px/1.45 var(--font-brand,serif);color:#14211f;letter-spacing:.02em;
+  background:rgba(240,235,223,.82);border-right:1.5px solid rgba(182,75,53,.6);
+  opacity:0;transform:translateY(-3px);transition:opacity .2s,transform .2s;
+}
+.orbit-readout.is-on{opacity:1;transform:none}
+.orbit-readout b{display:block;font-weight:600;font-size:12px;letter-spacing:.06em}
+.orbit-readout b span{font-variant-numeric:tabular-nums;color:#07575a;margin-left:2px}
+.orbit-readout p{margin:0;font-variant-numeric:tabular-nums;color:#4e5753}
+.orbit-readout p.hit em{font-style:normal;color:#b64b35;margin-left:6px}
+.orbit-readout p.keys{font-size:9.5px;color:#8a8f88}
+.orbit-readout p.keys i{font-style:normal;margin-left:6px}
+.orbit-readout p.keys i.on{color:#b64b35}
+.compass-art.orbit-guides{z-index:4}

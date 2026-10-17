@@ -37,7 +37,7 @@
   border:1px solid rgba(20,33,31,.55);
   background:radial-gradient(75% 75% at 36% 30%,#fffdf8 0,#efe9dc 60%,#ddd4c0 100%);
   box-shadow:0 0 0 4px rgba(240,235,223,.75);
-  cursor:grab;touch-action:none;
+  cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-user-drag:none;
   transition:transform .25s ease,box-shadow .25s ease;
 }
 .life-map[data-compass] .map-node.orb b{font-size:12.5px;line-height:1.25;white-space:nowrap;color:#14211f}
@@ -188,3 +188,6 @@
 .orbit-readout p.keys i{font-style:normal;margin-left:6px}
 .orbit-readout p.keys i.on{color:#b64b35}
 .compass-art.orbit-guides{z-index:4}
+.orbit-readout p.rel{color:#b64b35}
+.orbit-readout p.rel span{font-weight:600}
+.orbit-guides .gap-label{font-variant-numeric:tabular-nums;letter-spacing:.02em;paint-order:stroke;stroke:rgba(244,239,226,.85);stroke-width:2.5px}

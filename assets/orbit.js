@@ -531,6 +531,7 @@
       art.trails.textContent = '';
       nodeEls().forEach(function () { svg('circle', { fill: 'none', stroke: TEAL, 'stroke-width': 2.2, 'stroke-opacity': .35, 'stroke-linecap': 'round' }, art.trails); });
     }
+    measureNodes();
     layout();
   }
   /* 节点避让（星轨 / 潮汐 / 对转 / 摆荡）：两个节点在屏幕上近到不足一个直径时，内侧的往里、外侧的往外各让一点；
@@ -550,13 +551,24 @@
   // 节点直径（设计稿单位）：与 orbit.css 同一规则（照旧版）——罗盘宽的 10.6%，至少 54px（窄屏 46px）
   var NARROW = window.matchMedia ? window.matchMedia('(max-width:760px)') : null;
   function nodePx(cw) { return Math.max(NARROW && NARROW.matches ? 46 : 54, .106 * cw); }
-  function nodeSize() { var cw = map.clientWidth || 435; return nodePx(cw) * D / cw; }
+  // 每个节点的保守半径（设计稿单位）= 实际宽、高中较大者的一半：副标题折成多行的节点照旧版是竖椭圆，比宽更高。
+  // 只在重建节点、罗盘尺寸变化、字体载入后量一次（offsetWidth/Height 不含悬停 / 纵深缩放），逐帧只读缓存
+  var radii = [], radiiW = 0, radiiMax = 0;
+  function measureNodes() {
+    var cw = radiiW = map.clientWidth || 435;
+    radii = [].map.call(nodeEls(), function (el) { return Math.max(el.offsetWidth, el.offsetHeight) / 2 * D / cw; });
+    radiiMax = Math.max.apply(null, radii.concat(nodePx(cw) / 2 * D / cw));
+  }
+  function syncRadii() { if ((map.clientWidth || 435) !== radiiW) measureNodes(); }
+  function nodeR(i) { return radii[i] || nodePx(radiiW || 435) / 2 * D / (radiiW || 435); }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { measureNodes(); });
   function avoid(ms, dt) {
-    var need = nodeSize() * 1.04, tgt = ms.map(function () { return 0; }), tga = tgt.slice(), big = tgt.map(function () { return 1; });
+    syncRadii();
+    var tgt = ms.map(function () { return 0; }), tga = tgt.slice(), big = tgt.map(function () { return 1; });
     if (motion !== 'sync' && motion !== 'breath') {
       for (var i = 0; i < ms.length; i++) for (var j = i + 1; j < ms.length; j++) {
         var p = ms[i], q = ms[j]; if (!p || !q) continue;
-        var dist = Math.hypot(p.x - q.x, p.y - q.y); if (dist >= need) continue;
+        var need = (nodeR(i) + nodeR(j)) * 1.04, dist = Math.hypot(p.x - q.x, p.y - q.y); if (dist >= need) continue;
         var amt = Math.min(AVOID_MAX, (need - dist) / 2 + 2), inI = p.d < q.d || (p.d === q.d && i < j);
         // 刚放下 / 刚微调的节点（pin）留在读数给的位置不让，避让全由对方承担
         var ki = i === pin ? 0 : j === pin ? 2 : 1, kj = 2 - ki;
@@ -615,7 +627,7 @@
   }
   // 泊位（百分比）：按钮外沿离方框留 6 个设计稿单位；方框太小时至少离开节点的最大活动半径
   function berth(add) {
-    var cw = map.clientWidth || 435, h = (add.offsetWidth || nodePx(cw)) / 2 * D / cw, reach = dMax() + 6 + nodeSize() / 2;
+    var cw = map.clientWidth || 435, h = (Math.max(add.offsetWidth, add.offsetHeight) || nodePx(cw)) / 2 * D / cw, reach = dMax() + 6 + (syncRadii(), radiiMax);
     var c = Math.max(D / 2 - h - 6, (reach + h + 4) / Math.SQRT2);
     return { left: (50 - c / D * 100).toFixed(3) + '%', top: (50 + c / D * 100).toFixed(3) + '%' };
   }
@@ -700,10 +712,10 @@
         'A' + rx + ' ' + r + ' 0 0 ' + ((c > 0) === wax ? 0 : 1) + ' 0,' + -r + 'Z');
       P.phase.textContent = ph < .0625 || ph >= .9375 ? '朔' : ph < .4375 ? '上弦' : ph < .5625 ? '望' : '下弦';
     } else if (motion === 'duet') {
-      var near = nodeSize() * 1.9, idx = 0;
+      var idx = 0; syncRadii();
       for (var i = 0; i < ms.length; i++) for (var j = i + 1; j < ms.length; j++) {
         var l = P.links[idx++], p = ms[i], q = ms[j]; if (!l) continue;
-        var dist = p && q && p.dir !== q.dir ? Math.hypot(p.x - q.x, p.y - q.y) : Infinity;
+        var near = (nodeR(i) + nodeR(j)) * 1.9, dist = p && q && p.dir !== q.dir ? Math.hypot(p.x - q.x, p.y - q.y) : Infinity;
         if (dist >= near) { l.setAttribute('stroke-opacity', 0); continue; }
         l.setAttribute('x1', p.x.toFixed(1)); l.setAttribute('y1', p.y.toFixed(1));
         l.setAttribute('x2', q.x.toFixed(1)); l.setAttribute('y2', q.y.toFixed(1));
@@ -906,11 +918,14 @@
   }
   // 被拖节点与同轨前后相邻节点之间：沿轨道的朱砂细弧 + 角度差（数据里的本位差）
   function gapArcs(st, g) {
-    var m = moved(st.i, st.hd, st.mer), hs = st.h + m.da, dd = st.hd + m.dd, ins = (nodeSize() / 2 + 4) / dd * 180 / Math.PI;
+    syncRadii();
+    // 弧两端各让开所连节点的实际半径（竖椭圆取高的一半）+ 4
+    var m = moved(st.i, st.hd, st.mer), hs = st.h + m.da, dd = st.hd + m.dd, ins = (nodeR(st.i) + 4) / dd * 180 / Math.PI;
     [[g.P, -1, g.prev], [g.N, 1, g.next]].forEach(function (q) {
       var s = shown[q[0].k]; if (!s) return;
-      var span = q[1] < 0 ? norm(hs - s.ang) : norm(s.ang - hs); if (span < 2 * ins + 3) return;
-      var a0 = hs + q[1] * ins, a1 = hs + q[1] * (span - ins), mid = hs + q[1] * span / 2;
+      var ins2 = (nodeR(q[0].k) + 4) / dd * 180 / Math.PI;
+      var span = q[1] < 0 ? norm(hs - s.ang) : norm(s.ang - hs); if (span < ins + ins2 + 3) return;
+      var a0 = hs + q[1] * ins, a1 = hs + q[1] * (span - ins2), mid = hs + q[1] * span / 2;
       var isRef = st.rel && st.rel.ref.k === q[0].k;
       svg('path', { d: arcPath(a0, a1, dd, st.mer), fill: 'none', stroke: RED, 'stroke-width': isRef ? 1.3 : .9, 'stroke-opacity': isRef ? .85 : .6, 'stroke-linecap': 'round' }, guides);
       var lp = point(mid, dd + 13, st.mer);

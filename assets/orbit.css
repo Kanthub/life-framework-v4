@@ -32,8 +32,9 @@
 
 /* ---- 节点：宣纸星球（左上受光，纸色光晕） ---- */
 .life-map[data-compass] .map-node.orb{
-  /* 尺寸照旧版：罗盘宽的 10.6%，至少 54px（罗盘是正方形，高、外边距的百分比也都按罗盘宽算）；orbit.js 的 nodeSize() 用同一规则 */
-  width:max(54px,10.6%);height:max(54px,10.6%);margin:min(-27px,-5.3%);padding:4px 2px;
+  /* 尺寸照旧版：宽 = 罗盘宽的 10.6%，至少 54px；高默认等于宽，副标题折成多行时随内容撑高（竖椭圆），文字不出球面。
+     宽高不定，所以用 translate 居中；orbit.js 按每个节点的实际宽高算避让、泊位、间距弧线 */
+  width:max(54px,10.6%);height:auto;aspect-ratio:1;margin:0;translate:-50% -50%;padding:4px 2px;
   overflow:visible;isolation:isolate;
   border:1px solid rgba(20,33,31,.5);
   /* 照旧版：纸色球面 + 左上受光 + 右下一抹青墨晕 */
@@ -84,7 +85,7 @@
   0 0 22px 4px rgba(240,235,222,.7),
   0 10px 16px -8px rgba(20,36,34,.42)}
 .life-map[data-compass] .map-node.orb:focus-visible{outline:2px solid var(--deep-teal);outline-offset:5px}
-.life-map[data-compass] .map-add{width:max(54px,10.6%);height:max(54px,10.6%);margin:min(-27px,-5.3%)}
+.life-map[data-compass] .map-add{width:max(54px,10.6%);height:auto;aspect-ratio:1;margin:0;translate:-50% -50%}
 /* 「新增」压在节点之上（orbit.js 还会让它避开节点），任何模式下都点得到 */
 .life-map[data-compass] #mapNodes>.map-add{z-index:5}
 .life-map[data-compass="c"] #mapNodes>.map-add{z-index:6}
@@ -183,7 +184,7 @@
 .life-map[data-compass] .map-node.orb.is-yin small{color:#cfe0dc}
 
 @media (max-width:760px){
-  .life-map[data-compass] .map-node.orb,.life-map[data-compass] .map-add{width:max(46px,10.6%);height:max(46px,10.6%);margin:min(-23px,-5.3%)}
+  .life-map[data-compass] .map-node.orb,.life-map[data-compass] .map-add{width:max(46px,10.6%)}
   .life-map[data-compass]{width:min(400px,96%)}
   .compass-switch button{font-size:11px;padding:2px 8px}
   .compass-cycle{padding:2px 6px}

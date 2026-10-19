@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<title>罗盘设计稿 · 三选一</title>
+<style>
+@font-face{font-family:NS;font-weight:500;src:url(../assets/fonts/NotoSerifSC-500.woff2)}
+@font-face{font-family:NS;font-weight:700;src:url(../assets/fonts/NotoSerifSC-700.woff2)}
+:root{--paper:#f0ebdf;--ink:#14211f;--teal:#07575a;--red:#b64b35;--mut:#626964}
+body{margin:0;background:#f0ebdf url(../assets/visual/xuan-paper.png);color:var(--ink);font-family:NS,serif}
+header{padding:26px 40px 4px}
+h1{font-size:26px;margin:0;letter-spacing:.06em}
+header p{color:var(--mut);margin:6px 0 0;font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;padding:16px 40px 40px}
+figure{margin:0;border-top:1px solid rgba(20,33,31,.45);padding-top:14px}
+figcaption h2{font-size:21px;margin:0 0 4px;letter-spacing:.05em}
+figcaption h2 span{color:var(--red);margin-right:8px}
+figcaption p{font-size:13px;line-height:1.8;color:var(--mut);margin:0 0 4px}
+svg{width:100%;aspect-ratio:1;display:block;margin:8px 0 10px;overflow:visible}
+svg text{font-family:NS,serif}
+</style>
+<header>
+  <h1>罗盘设计稿</h1>
+  <p>三个方向都按放大后的尺寸设计（约 560px，现在是 435px），轨道从 3 条增加到 5–6 条。图中都在实时转动，鼠标移上去会停下。</p>
+</header>
+<div class="grid">
+  <figure><svg id="A" viewBox="-262 -262 524 524"></svg><figcaption>
+    <h2><span>甲</span>太极星盘</h2>
+    <p>中心换成缓慢自转的太极，外面一圈先天八卦逆向转动。三条节点轨道由内到外越转越慢，像真实的行星，每颗节点后面拖一小段墨色轨迹。最外圈是二十四节气刻度。</p>
+    <p>气质：最“罗盘”，像一件古代仪器。拖动吸附和现在一样简单。</p>
+  </figcaption></figure>
+  <figure><svg id="B" viewBox="-262 -262 524 524"></svg><figcaption>
+    <h2><span>乙</span>阴阳昼夜</h2>
+    <p>中心保留现在的青绿圆和领域名，把它当作太阳。整个盘面铺一张极淡的大阴阳鱼，缓慢旋转。四条轨道一顺一逆交替（阳顺阴逆）。节点朝外的一面有阴影，进入阴面时整体染一层青色，像星球进入黑夜。</p>
+    <p>气质：最克制，和现在的页面过渡最自然。</p>
+  </figcaption></figure>
+  <figure><svg id="C" viewBox="-262 -262 524 524"></svg><figcaption>
+    <h2><span>丙</span>浑天仪</h2>
+    <p>三条倾斜的椭圆轨道交叉环绕，中心是一颗立体的太极球。节点转到后方时变小变淡、被太极球遮住，转到前方时变大，有纵深感。</p>
+    <p>气质：最华丽、最有天体感。代价是拖动定位要沿椭圆走，交互上会复杂一些。</p>
+  </figcaption></figure>
+</div>
+<script>
+var NS = 'http://www.w3.org/2000/svg';
+var NODES = [['饮食', '热量'], ['训练', '身体重塑'], ['睡眠', '恢复'], ['生活管理', '作息'], ['情绪', '觉察'], ['冥想', '静心']];
+var INK = '#14211f', TEAL = '#07575a', RED = '#b64b35', PAPER = '#f0ebdf';
+function el(tag, at, p) { var e = document.createElementNS(NS, tag); for (var k in at) e.setAttribute(k, at[k]); if (p) p.appendChild(e); return e; }
+function txt(p, s, at) { var t = el('text', Object.assign({ 'text-anchor': 'middle' }, at), p); t.textContent = s; return t; }
+function rad(a) { return (a - 90) * Math.PI / 180; }           // 0 = 上，顺时针
+function pt(a, r) { return [Math.cos(rad(a)) * r, Math.sin(rad(a)) * r]; }
+// 太极：深色鱼 + 两只眼
+function taiji(p, R, dark, light) {
+  var g = el('g', {}, p);
+  el('circle', { r: R, fill: light }, g);
+  el('path', { d: 'M0,' + -R + 'A' + R + ' ' + R + ' 0 0 1 0,' + R + 'A' + R / 2 + ' ' + R / 2 + ' 0 0 1 0,0A' + R / 2 + ' ' + R / 2 + ' 0 0 0 0,' + -R + 'Z', fill: dark }, g);
+  el('circle', { cy: -R / 2, r: R / 7, fill: dark }, g);
+  el('circle', { cy: R / 2, r: R / 7, fill: light }, g);
+  return g;
+}
+function defs(svg, id) {
+  var d = el('defs', {}, svg);
+  var g = el('radialGradient', { id: id + 'pl', cx: '.36', cy: '.3', r: '.75' }, d);
+  el('stop', { offset: '0', 'stop-color': '#fffdf8' }, g);
+  el('stop', { offset: '.6', 'stop-color': '#efe9dc' }, g);
+  el('stop', { offset: '1', 'stop-color': '#ddd4c0' }, g);
+  var s = el('linearGradient', { id: id + 'sh' }, d);
+  el('stop', { offset: '.45', 'stop-color': TEAL, 'stop-opacity': 0 }, s);
+  el('stop', { offset: '1', 'stop-color': '#0b2e2f', 'stop-opacity': .42 }, s);
+  var b = el('radialGradient', { id: id + 'ball', cx: '.35', cy: '.3', r: '.8' }, d);
+  el('stop', { offset: '0', 'stop-color': '#fff', 'stop-opacity': .45 }, b);
+  el('stop', { offset: '.55', 'stop-color': '#fff', 'stop-opacity': 0 }, b);
+  el('stop', { offset: '1', 'stop-color': '#061c1c', 'stop-opacity': .45 }, b);
+}
+function planet(p, id, n, r) {
+  var g = el('g', {}, p);
+  el('circle', { r: r + 4, fill: PAPER, opacity: .75 }, g);
+  el('circle', { r: r, fill: 'url(#' + id + 'pl)', stroke: INK, 'stroke-opacity': .55 }, g);
+  var tint = el('circle', { r: r, fill: TEAL, opacity: 0, style: 'transition:opacity 1.2s' }, g);
+  var shade = el('circle', { r: r, fill: 'url(#' + id + 'sh)', opacity: 0 }, g);
+  txt(g, n[0], { y: n[0].length > 2 ? 1 : 0, 'font-size': n[0].length > 2 ? 11 : 13, 'font-weight': 700, fill: INK });
+  txt(g, n[1], { y: 12, 'font-size': 7.5, fill: '#626964' });
+  return { g: g, tint: tint, shade: shade };
+}
+function ticks(p, R, n, long, col) {
+  for (var i = 0; i < n; i++) {
+    var a = i * 360 / n, L = i % long ? 5 : 10, o = pt(a, R), q = pt(a, R - L);
+    el('line', { x1: o[0], y1: o[1], x2: q[0], y2: q[1], stroke: col || INK, 'stroke-opacity': i % long ? .35 : .7 }, p);
+  }
+}
+function dirs(p, R) {
+  [['上', '精力', 0], ['守', '平衡', 90], ['下', '恢复', 180], ['进', '行动', 270]].forEach(function (d) {
+    var q = pt(d[2], R); txt(p, d[0], { x: q[0], y: q[1] + 2, 'font-size': 14, 'font-weight': 700, fill: INK });
+    txt(p, d[1], { x: q[0], y: q[1] + 14, 'font-size': 7.5, fill: '#626964' });
+    var m = pt(d[2], R - 18); el('circle', { cx: m[0], cy: m[1], r: 2.4, fill: RED }, p);
+  });
+}
+
+/* ———— 甲：太极星盘 ———— */
+function buildA() {
+  var s = document.getElementById('A'), id = 'A'; defs(s, id);
+  el('circle', { r: 226, fill: 'none', stroke: INK, 'stroke-opacity': .75 }, s);
+  el('circle', { r: 212, fill: 'none', stroke: INK, 'stroke-opacity': .3 }, s);
+  ticks(s, 226, 72, 3);
+  var terms = ['立春', '雨水', '惊蛰', '春分', '清明', '谷雨', '立夏', '小满', '芒种', '夏至', '小暑', '大暑', '立秋', '处暑', '白露', '秋分', '寒露', '霜降', '立冬', '小雪', '大雪', '冬至', '小寒', '大寒'];
+  terms.forEach(function (t, i) { if (i % 3) return; var a = i * 15 + 7.5, q = pt(a, 203); txt(s, t, { x: q[0], y: q[1] + 2.5, 'font-size': 7, fill: '#898c85', transform: 'rotate(' + a + ' ' + q[0] + ' ' + q[1] + ')' }); });
+  var orbits = [112, 150, 188];
+  orbits.forEach(function (r, i) { el('circle', { r: r, fill: 'none', stroke: i == 1 ? INK : TEAL, 'stroke-opacity': i == 1 ? .35 : .4, 'stroke-dasharray': i == 0 ? '3 4' : i == 2 ? '1 5' : 'none' }, s); });
+  dirs(s, 246);
+  // 八卦环
+  var gua = el('g', {}, s);
+  el('circle', { r: 79, fill: 'none', stroke: INK, 'stroke-opacity': .5 }, gua);
+  el('circle', { r: 98, fill: 'none', stroke: INK, 'stroke-opacity': .5 }, gua);
+  [[1, 1, 1], [0, 1, 1], [0, 1, 0], [0, 0, 1], [0, 0, 0], [1, 0, 0], [1, 0, 1], [1, 1, 0]].forEach(function (lines, k) {
+    var g = el('g', { transform: 'rotate(' + k * 45 + ')' }, gua);
+    lines.forEach(function (yang, j) {
+      var y = -(83 + j * 5.5);
+      if (yang) el('line', { x1: -7, x2: 7, y1: y, y2: y, stroke: INK, 'stroke-width': 2.4 }, g);
+      else { el('line', { x1: -7, x2: -1.6, y1: y, y2: y, stroke: INK, 'stroke-width': 2.4 }, g); el('line', { x1: 1.6, x2: 7, y1: y, y2: y, stroke: INK, 'stroke-width': 2.4 }, g); }
+    });
+    el('circle', { cy: -88, r: 1.6, fill: RED, transform: 'rotate(22.5)' }, g);
+  });
+  // 太极
+  el('circle', { r: 66, fill: PAPER, stroke: INK, 'stroke-opacity': .6 }, s);
+  var tj = taiji(s, 62, TEAL, '#f6f2e8');
+  var name = txt(s, '身心健康', { y: 5, 'font-size': 15, 'font-weight': 700, fill: INK, stroke: '#f6f2e8', 'stroke-width': 4, 'paint-order': 'stroke', 'letter-spacing': '1' });
+  // 节点 + 轨迹
+  var trails = el('g', {}, s), pl = el('g', {}, s), items = [];
+  NODES.forEach(function (n, i) {
+    var R = orbits[i % 3], C = 2 * Math.PI * R;
+    var tr = el('circle', { r: R, fill: 'none', stroke: TEAL, 'stroke-width': 2.2, 'stroke-opacity': .35, 'stroke-linecap': 'round', 'stroke-dasharray': (C * 34 / 360) + ' ' + C }, trails);
+    items.push({ R: R, a0: i * 67 + (i % 3) * 23, T: [50, 85, 130][i % 3], p: planet(pl, id, n, 27), tr: tr });
+  });
+  return function (t) {
+    tj.setAttribute('transform', 'rotate(' + t * 6 + ')');
+    gua.setAttribute('transform', 'rotate(' + -t * 2.5 + ')');
+    items.forEach(function (it) {
+      var a = it.a0 + 360 * t / it.T, q = pt(a, it.R);
+      it.p.g.setAttribute('transform', 'translate(' + q[0] + ' ' + q[1] + ')');
+      it.tr.setAttribute('transform', 'rotate(' + (a - 90 - 34) + ')');
+    });
+  };
+}
+
+/* ———— 乙：阴阳昼夜 ———— */
+function buildB() {
+  var s = document.getElementById('B'), id = 'B'; defs(s, id);
+  var cl = el('clipPath', { id: 'Bclip' }, s.querySelector('defs')); el('circle', { r: 226 }, cl);
+  var wash = el('g', { 'clip-path': 'url(#Bclip)' }, s);
+  var big = taiji(wash, 226, 'rgba(7,87,90,.085)', 'rgba(255,255,255,0)');
+  el('circle', { r: 226, fill: 'none', stroke: INK, 'stroke-opacity': .75 }, s);
+  ticks(s, 226, 48, 4, INK);
+  dirs(s, 246);
+  var orbits = [96, 130, 164, 198];
+  orbits.forEach(function (r, i) { el('circle', { r: r, fill: 'none', stroke: i % 2 ? TEAL : INK, 'stroke-opacity': i % 2 ? .45 : .35, 'stroke-dasharray': i % 2 ? '1.5 4' : 'none' }, s); });
+  // 每条轨道一个小箭头标出顺逆
+  orbits.forEach(function (r, i) { var a = 200 + i * 8, q = pt(a, r); el('path', { d: i % 2 ? 'M3,-3L-2,0L3,3' : 'M-3,-3L2,0L-3,3', fill: 'none', stroke: i % 2 ? TEAL : INK, 'stroke-opacity': .6, transform: 'translate(' + q[0] + ' ' + q[1] + ') rotate(' + a + ')' }, s); });
+  // 中心太阳
+  el('circle', { r: 64, fill: 'none', stroke: TEAL, 'stroke-opacity': .25, 'stroke-width': 10 }, s);
+  el('circle', { r: 58, fill: TEAL, stroke: PAPER, 'stroke-width': 4 }, s);
+  el('circle', { r: 62, fill: 'none', stroke: TEAL }, s);
+  txt(s, '身心健康', { y: 2, 'font-size': 16, 'font-weight': 700, fill: '#fff', 'letter-spacing': '1' });
+  txt(s, '稳定　清晰　有力', { y: 18, 'font-size': 7.5, fill: '#cfe0dc' });
+  var pl = el('g', {}, s), items = [], plan = [0, 1, 1, 2, 2, 3];
+  NODES.forEach(function (n, i) { var k = plan[i]; items.push({ R: orbits[k], dir: k % 2 ? -1 : 1, a0: i * 61 + k * 30, T: [60, 80, 105, 135][k], p: planet(pl, id, n, 26) }); });
+  items.forEach(function (it) { it.p.shade.setAttribute('opacity', 1); });
+  return function (t) {
+    var w = t * 4; big.setAttribute('transform', 'rotate(' + w + ')');
+    items.forEach(function (it) {
+      var a = it.a0 + it.dir * 360 * t / it.T, q = pt(a, it.R);
+      it.p.g.setAttribute('transform', 'translate(' + q[0] + ' ' + q[1] + ')');
+      it.p.shade.setAttribute('transform', 'rotate(' + (a - 90) + ')');       // 背光面朝外
+      // 大阴阳鱼的深色半边在其局部坐标的右侧
+      var local = ((a - w) % 360 + 360) % 360;
+      it.p.tint.setAttribute('opacity', local < 180 ? .2 : 0);
+    });
+  };
+}
+
+/* ———— 丙：浑天仪 ———— */
+function buildC() {
+  var s = document.getElementById('C'), id = 'C'; defs(s, id);
+  el('circle', { r: 226, fill: 'none', stroke: INK, 'stroke-opacity': .7 }, s);
+  el('circle', { r: 219, fill: 'none', stroke: INK, 'stroke-opacity': .25 }, s);
+  ticks(s, 226, 72, 6);
+  dirs(s, 246);
+  var rings = [{ rx: 118, ry: 44, tilt: -20 }, { rx: 162, ry: 60, tilt: 15 }, { rx: 204, ry: 78, tilt: -5 }];
+  var back = el('g', {}, s), core = el('g', {}, s), front = el('g', {}, s);
+  // 子午圈（竖直细椭圆，静止）
+  el('ellipse', { rx: 34, ry: 204, fill: 'none', stroke: INK, 'stroke-opacity': .18 }, back);
+  rings.forEach(function (r, i) {
+    var g = 'rotate(' + r.tilt + ')';
+    el('path', { d: 'M' + -r.rx + ',0A' + r.rx + ' ' + r.ry + ' 0 0 1 ' + r.rx + ',0', fill: 'none', stroke: INK, 'stroke-opacity': .22, 'stroke-dasharray': '2 4', transform: g }, back);
+    el('path', { d: 'M' + r.rx + ',0A' + r.rx + ' ' + r.ry + ' 0 0 1 ' + -r.rx + ',0', fill: 'none', stroke: i == 1 ? TEAL : INK, 'stroke-opacity': .6, 'stroke-width': 1.3, transform: g }, front);
+  });
+  // 太极球
+  var tj = taiji(core, 56, TEAL, '#f6f2e8');
+  el('circle', { r: 56, fill: 'url(#Cball)', stroke: INK, 'stroke-opacity': .5 }, core);
+  el('ellipse', { rx: 74, ry: 16, fill: 'none', stroke: RED, 'stroke-opacity': .55, transform: 'rotate(-8)' }, core);
+  txt(core, '身心健康', { y: 84, 'font-size': 13, 'font-weight': 700, fill: INK, stroke: PAPER, 'stroke-width': 4, 'paint-order': 'stroke' });
+  var items = [];
+  NODES.forEach(function (n, i) { var k = i % 3; items.push({ ring: rings[k], a0: i * 70, T: [45, 70, 100][k], p: planet(back, id, n, 26) }); });
+  return function (t) {
+    tj.setAttribute('transform', 'rotate(' + t * 7 + ')');
+    items.forEach(function (it) {
+      var r = it.ring, th = (it.a0 + 360 * t / it.T) * Math.PI / 180;
+      var x = r.rx * Math.cos(th), y = r.ry * Math.sin(th), c = Math.cos(r.tilt * Math.PI / 180), sn = Math.sin(r.tilt * Math.PI / 180);
+      var X = x * c - y * sn, Y = x * sn + y * c, depth = Math.sin(th);     // >0 在前
+      var k = .74 + .26 * (depth + 1) / 2;
+      var layer = depth > 0 ? front : back; if (it.p.g.parentNode !== layer) layer.appendChild(it.p.g);
+      it.p.g.setAttribute('transform', 'translate(' + X + ' ' + Y + ') scale(' + k + ')');
+      it.p.g.setAttribute('opacity', (.5 + .5 * (depth + 1) / 2).toFixed(2));
+    });
+  };
+}
+
+var runs = [buildA(), buildB(), buildC()].map(function (f, i) { return { f: f, t: 0, sp: 1, tg: 1, svg: document.querySelectorAll('svg')[i] }; });
+var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+runs.forEach(function (r) { r.svg.addEventListener('pointerenter', function () { r.tg = 0; }); r.svg.addEventListener('pointerleave', function () { r.tg = 1; }); r.f(0); });
+var last = 0;
+requestAnimationFrame(function tick(now) {
+  var dt = last ? Math.min(.1, (now - last) / 1000) : 0; last = now;
+  if (!reduce) runs.forEach(function (r) { r.sp += (r.tg - r.sp) * Math.min(1, dt * 3); r.t += r.sp * dt; r.f(r.t); });
+  requestAnimationFrame(tick);
+});
+</script>
+</html>

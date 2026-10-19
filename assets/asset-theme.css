@@ -1,0 +1,106 @@
+@font-face{font-family:"LXGW WenKai Local";src:url("fonts/LXGWWenKai-Regular.ttf") format("truetype");font-style:normal;font-weight:400;font-display:swap}
+:root{
+  --paper-image:url("visual/xuan-paper.png");
+  --paper-base:#f0ebdf;--paper-raised:rgba(249,246,238,.78);--paper-soft:rgba(235,229,215,.4);
+  --ink-primary:#14211f;--ink-secondary:#626964;--ink-faint:#898c85;
+  --rule-page:rgba(20,33,31,.68);--rule-panel:rgba(25,39,36,.38);--rule-content:rgba(31,45,42,.2);--rule-ghost:rgba(31,45,42,.11);
+  --rule:var(--rule-content);--rule-strong:var(--rule-panel);
+  --deep-teal:#07575a;--deep-teal-hover:#0b6769;--cinnabar:#b64b35;
+  --font-brand:"Noto Serif SC","Source Han Serif SC","Songti SC","STSong","SimSun",serif;
+  --font-reading:"Noto Sans SC","Source Han Sans SC","Microsoft YaHei","PingFang SC",sans-serif;
+  --font-control:"Noto Sans SC","Source Han Sans SC","Microsoft YaHei","PingFang SC",sans-serif;
+  --space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:24px;
+  --hairline:1px;--material-low:.34;--material-mid:.62;--material-high:.82;
+}
+html,body{background-color:var(--paper-base)}
+body{color:var(--ink-primary);font-family:var(--font-reading);font-weight:400;background-image:linear-gradient(rgba(248,245,237,.42),rgba(238,232,219,.34)),var(--paper-image);background-size:auto,610px 610px;background-blend-mode:normal,multiply}
+body:after{display:none}
+.sidebar{display:flex;flex-direction:column;isolation:isolate;overflow-x:hidden;overflow-y:auto;background-color:#0c1a19;background-image:linear-gradient(180deg,rgba(5,20,19,.78),rgba(4,16,15,.9)),var(--paper-image);background-size:auto,520px 520px;background-blend-mode:multiply,soft-light;box-shadow:inset -1px 0 rgba(232,226,211,.16)}
+.sidebar:before{content:"";position:absolute;z-index:0;inset:0;pointer-events:none;background:var(--paper-image) center top/360px 360px repeat;filter:grayscale(1) invert(1) contrast(1.72) brightness(.72);mix-blend-mode:screen;opacity:.31}
+.sidebar:after{content:"";position:absolute;z-index:0;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(255,255,255,.025),transparent 34%,rgba(0,0,0,.08));opacity:.8}
+.sidebar>*{position:relative;z-index:1}
+.sidebar .traffic{flex:0 0 auto;height:clamp(14px,1.8vh,18px)}
+.sidebar .brand-orbit{flex:0 0 auto;width:clamp(72px,11vh,112px);height:clamp(72px,11vh,112px);margin-top:clamp(7px,1.7vh,17px);margin-bottom:clamp(3px,.7vh,7px);background:none;filter:none;mix-blend-mode:normal;opacity:1;stroke:#b9c5bf;stroke-width:.7;fill:none}
+.sidebar .brand-orbit .outer{stroke:#d3d9d3;stroke-width:.9}
+.sidebar .brand-orbit .orbit-mid{stroke:rgba(198,208,202,.62);stroke-width:.62}
+.sidebar .brand-orbit .orbit-inner{stroke:rgba(198,208,202,.48);stroke-width:.58}
+.sidebar .brand-orbit .axes{stroke:#aab8b2;stroke-width:.62}
+.sidebar .brand-orbit .spokes{stroke:rgba(168,183,176,.5);stroke-width:.5;stroke-dasharray:1.5 2.5}
+.sidebar .brand-orbit .web{stroke:rgba(215,221,216,.72);stroke-width:.58}
+.sidebar .brand-orbit .stars{fill:#e5e7df;stroke:none}
+.sidebar .brand-orbit .core-halo{fill:none;stroke:rgba(227,230,223,.55);stroke-width:.7}
+.sidebar .brand-orbit .core{fill:#eeeade;stroke:none}
+.sidebar h1{flex:0 0 auto;margin-top:clamp(4px,.8vh,8px);font-family:var(--font-brand);font-size:clamp(18px,2.35vh,24px);font-weight:700;letter-spacing:.13em;text-shadow:0 1px rgba(255,255,255,.08)}
+.sidebar .brand-sub{flex:0 0 auto;margin-top:clamp(4px,.8vh,8px);margin-bottom:clamp(10px,2.25vh,23px);font-family:"LXGW WenKai Local","LXGW WenKai","霞鹜文楷",cursive;font-size:clamp(9px,1.08vh,11px);font-weight:400}
+.sidebar nav{flex:0 0 auto}
+.sidebar nav button{position:relative;min-height:0;padding:clamp(7px,1.18vh,12px) clamp(14px,2vh,20px)!important;border-radius:0;font-family:var(--font-brand);font-size:clamp(12px,1.46vh,15px);font-weight:600;letter-spacing:.035em}
+.sidebar nav button .line-icon{width:clamp(17px,2.15vh,22px);height:clamp(17px,2.15vh,22px)}
+.sidebar nav button.on{border-left:0!important;border-radius:6px 2px 2px 6px;color:#10201f;background-color:#bfd4d1;background-image:linear-gradient(rgba(213,229,225,.28),rgba(176,203,198,.12)),var(--paper-image);background-size:auto,235px 235px;background-blend-mode:normal,multiply;box-shadow:inset 0 0 0 1px rgba(20,45,42,.12)}
+.sidebar nav button.on:after{content:"";position:absolute;right:-9px;top:50%;transform:translateY(-50%);width:0;height:0;border-top:8px solid transparent;border-bottom:8px solid transparent;border-left:9px solid #aec7c3}
+.sidebar .side-tools{flex:0 0 auto;margin-top:clamp(7px,1.7vh,18px);padding-top:clamp(6px,1.15vh,12px)}
+.sidebar .side-tools button{padding:clamp(5px,.88vh,9px) clamp(14px,2vh,20px);font-family:"LXGW WenKai Local","LXGW WenKai","霞鹜文楷",cursive;font-size:clamp(11px,1.36vh,14px);letter-spacing:.025em}
+.sidebar .side-tools .line-icon{width:clamp(14px,1.65vh,17px);height:clamp(14px,1.65vh,17px)}
+.sidebar .mountains{position:absolute;width:202px;height:clamp(58px,10.2vh,104px);left:-1px;bottom:clamp(50px,8vh,82px);background-image:url("visual/mountain-panorama.png");background-size:312px auto;background-position:center bottom;background-repeat:no-repeat;filter:grayscale(1) invert(1) contrast(2.65) brightness(.86);mix-blend-mode:screen;opacity:.48;mask-image:linear-gradient(to bottom,transparent 0,#000 23%,#000 72%,transparent 100%)}
+.sidebar .mountains>*{opacity:0}
+.sidebar blockquote{position:relative;margin:auto 0 0;padding:clamp(8px,1.4vh,14px) 12px clamp(8px,1.7vh,17px) clamp(17px,2.7vh,28px);left:auto;bottom:auto;font-family:"LXGW WenKai Local","LXGW WenKai","霞鹜文楷",cursive;font-size:clamp(8px,1.08vh,11px);line-height:1.85;letter-spacing:.1em;color:rgba(218,224,217,.72)}
+@media(max-height:620px){.sidebar .top-knot{display:none}.sidebar .mountains{opacity:.25}.sidebar .brand-sub{margin-bottom:7px}.sidebar .side-tools{margin-top:5px}.sidebar blockquote{line-height:1.6}}
+.app{padding-left:20px;padding-right:20px}
+.masthead,.panel{background-color:var(--paper-raised);background-image:linear-gradient(rgba(255,255,255,.4),rgba(232,225,211,.27)),var(--paper-image);background-size:auto,690px;background-blend-mode:normal,multiply}
+.masthead{border-color:var(--rule-page);font-family:var(--font-control);font-weight:400}
+.panel{box-shadow:none;border-color:var(--rule-page)}
+.framework-panel{background-color:rgba(246,242,232,.8)}
+.quick,.timeline{background-color:rgba(250,247,239,.7)}
+.seal{display:block;flex:0 0 34px;width:34px;height:34px;padding:0;border:0;color:transparent;font-size:0;line-height:0;vertical-align:initial;background:url("visual/seal-kongwo.png") center/176% no-repeat;mix-blend-mode:multiply;filter:saturate(.9) contrast(1.22);opacity:.88}
+.mini-seal{border-color:rgba(182,75,53,.68);color:var(--cinnabar);background:rgba(182,75,53,.025)}
+.title,.panel-title h2,.domain-heading h3{font-family:var(--font-brand);font-weight:700}
+.title{display:flex;align-items:center;gap:15px;font-family:var(--font-brand);font-weight:800;letter-spacing:.075em;line-height:1}
+.title-text{display:block;white-space:nowrap}
+.motto,.credo,.calendar{font-family:"LXGW WenKai Local","LXGW WenKai","霞鹜文楷",cursive}
+.motto{font-weight:400;letter-spacing:.11em}
+.credo{font-weight:400;letter-spacing:.14em}
+.calendar{font-weight:400;letter-spacing:.025em}
+.sun{display:grid!important;place-items:center;color:var(--ink-primary)}
+.sun svg{display:block;width:34px;height:34px;fill:currentColor;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.panel-title h2{letter-spacing:.04em}
+.domain-heading h3{font-weight:700;letter-spacing:.035em}
+.domain b{font-family:var(--font-brand);font-weight:600;letter-spacing:.025em}
+.domain small,.domain-heading p,.panel-title span,.timeline-list article p,.lists li small{font-family:var(--font-reading);font-weight:300}
+.calendar,.month,.timeline-list time{font-variant-numeric:tabular-nums lining-nums}
+.panel-title span,.domain-heading p,.domain small,.lists li small,.timeline-list article p{color:var(--ink-secondary)}
+.panel-title{border-color:var(--rule-panel)}
+.tabs,.domain,.lists section header,.lists li,.month{border-color:var(--rule-content)}
+.panel-actions button,.panel-title>button,.activity-picks button,.quick textarea{border-color:var(--rule);background-color:rgba(250,247,238,.28)}
+.panel-actions .primary,.meta-row button{background:var(--deep-teal)}
+.panel-actions .primary:hover,.meta-row button:hover{background:var(--deep-teal-hover)}
+.domain.on{background-color:rgba(198,219,213,.54);background-image:linear-gradient(100deg,rgba(255,255,255,.18),transparent),var(--paper-image);background-size:auto,400px;background-blend-mode:soft-light,multiply}
+.domain.on>span{background:var(--cinnabar)}
+.domain-mountain{left:8px;bottom:50px;width:225px;height:118px;background:url("visual/mountain-panorama.png") center bottom/350px auto no-repeat;filter:grayscale(1) contrast(.85);mix-blend-mode:multiply;opacity:.25;mask-image:linear-gradient(to bottom,transparent 0,#000 30%,#000 80%,transparent 100%)}
+.domain-mountain>*{opacity:0}
+.workspace{grid-template-columns:minmax(700px,1.85fr) minmax(390px,1fr);gap:14px}
+.rightcol .panel-title h2{white-space:nowrap}
+.rightcol .panel-title span{line-height:1.55}
+.life-map .ring{border-color:rgba(22,55,51,.3)}
+.life-map .r2{border-color:rgba(22,55,51,.25)}
+.life-map .r3{border-color:rgba(22,55,51,.2);border-style:solid}
+.life-map .r1{border-color:rgba(7,87,90,.68);box-shadow:0 0 0 3px rgba(238,232,219,.88),0 0 0 4px rgba(7,87,90,.22)}
+.life-map .cross{background:rgba(34,60,56,.2)}
+.instrument-lines{position:absolute;inset:0;width:100%;height:100%;z-index:1;overflow:visible;fill:none;pointer-events:none}
+.instrument-lines .radials{stroke:rgba(23,55,51,.34);stroke-width:.8;stroke-linecap:round}
+.instrument-lines .anchors{stroke:var(--deep-teal);stroke-width:1;fill:var(--paper-base)}
+.instrument-lines .anchors circle{fill:var(--deep-teal);stroke:none}
+.instrument-lines .ticks{stroke:rgba(23,55,51,.48);stroke-width:.85}
+.life-map:before{content:"";position:absolute;z-index:3;left:50%;top:4.5%;width:4px;height:4px;margin:-2px;border-radius:50%;background:var(--cinnabar);box-shadow:198px 198px 0 var(--cinnabar),0 396px 0 var(--cinnabar),-198px 198px 0 var(--cinnabar);opacity:.86}
+.map-center{z-index:2;background:radial-gradient(circle at 38% 30%,#11676a,var(--deep-teal) 64%,#03494b);box-shadow:0 0 0 3px rgba(241,236,224,.96),0 0 0 4px var(--deep-teal),0 0 0 7px rgba(7,87,90,.18)}
+.map-center svg{width:72%;height:42px;stroke-width:1.15;stroke-linecap:round;stroke-linejoin:round}
+.map-center b{font-family:var(--font-brand);font-weight:700;letter-spacing:.06em}
+.map-node{background-color:rgba(244,239,226,.9);background-image:linear-gradient(rgba(255,255,255,.08),rgba(219,210,190,.04)),var(--paper-image);background-size:auto,420px;border-color:rgba(29,43,40,.52);box-shadow:0 1px rgba(255,255,255,.5) inset}
+.map-node{width:68px;height:68px;margin:-34px;padding:6px 4px}
+.map-node b{font-family:var(--font-brand);font-weight:700;font-size:14px;line-height:1.35}
+.map-node small{font-family:var(--font-reading);font-weight:300;line-height:1.25}
+.n0{left:50%;top:17.5%}.n1{left:72.8%;top:27.2%}.n2{left:72.8%;top:72.8%}.n3{left:50%;top:82.5%}.n4{left:27.2%;top:27.2%}.n5{left:27.2%;top:72.8%}
+.lists li>span{background:var(--deep-teal)}
+.lists label input:checked+i{background:var(--deep-teal)}
+.timeline-list article>i,.timeline-list article>i:after{background:var(--deep-teal)}
+.evt-icon{background:rgba(246,242,232,.48)}
+input,textarea,button{font-family:var(--font-control)}
+:focus-visible{outline:2px solid var(--cinnabar);outline-offset:2px}

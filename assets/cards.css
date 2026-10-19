@@ -1,0 +1,152 @@
+/* ============================================================
+   节点卡片（册页弹窗）
+   从被点的节点处展开；纸面跟随当前纸面主题
+   ============================================================ */
+html.cl-lock,html.cl-lock body{overflow:hidden}
+#cardLayer{position:fixed;inset:0;z-index:180;display:none}
+#cardLayer.is-open{display:block}
+.cl-veil{position:absolute;inset:0;background:radial-gradient(120% 90% at 50% 45%,rgba(12,24,23,.28),rgba(12,24,23,.5));backdrop-filter:blur(2.5px) saturate(.9);opacity:0;animation:clVeil .32s ease forwards}
+#cardLayer.is-closing .cl-veil{animation:clVeilOut .26s ease forwards}
+
+.cl-sheet{position:absolute;left:50%;top:50%;width:min(760px,calc(100vw - 48px));max-height:min(860px,calc(100vh - 56px));display:flex;flex-direction:column;
+  transform:translate(-50%,-50%);outline:none;
+  background-color:var(--paper-base);
+  background-image:linear-gradient(var(--pp-panel-a),var(--pp-panel-b)),var(--paper-image);background-size:auto,620px 620px;background-blend-mode:normal,multiply;
+  border:1px solid rgba(20,33,31,.5);border-radius:2px;
+  box-shadow:0 0 0 6px rgba(240,234,221,.55),0 0 0 7px rgba(20,33,31,.18),0 30px 70px -20px rgba(10,22,20,.55),0 10px 22px -10px rgba(10,22,20,.35);
+  animation:clOpen .46s cubic-bezier(.2,.9,.25,1.1) both}
+/* 从节点位置飞出并展开：--dx/--dy 是节点中心相对屏幕中心的偏移（由脚本写入） */
+@keyframes clOpen{
+  0%{opacity:0;transform:translate(calc(-50% + var(--dx,0px)),calc(-50% + var(--dy,0px))) scale(.12);border-radius:50%}
+  40%{opacity:1;border-radius:24px}
+  100%{opacity:1;transform:translate(-50%,-50%) scale(1);border-radius:2px}
+}
+#cardLayer.is-closing .cl-sheet{animation:clClose .26s cubic-bezier(.5,0,.75,0) forwards}
+@keyframes clClose{to{opacity:0;transform:translate(calc(-50% + var(--dx,0px)),calc(-50% + var(--dy,0px))) scale(.16);border-radius:50%}}
+@keyframes clVeil{to{opacity:1}}
+@keyframes clVeilOut{from{opacity:1}to{opacity:0}}
+/* 内容在纸展开后再浮现 */
+.cl-scroll>*{animation:clRise .5s ease both}
+.cl-scroll>*:nth-child(2){animation-delay:.05s}
+.cl-scroll>*:nth-child(3){animation-delay:.1s}
+.cl-scroll>*:nth-child(n+4){animation-delay:.14s}
+@keyframes clRise{0%,30%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:none}}
+/* 翻页：像翻过一张纸 */
+.cl-sheet.is-turn .cl-scroll{animation:clTurn .4s cubic-bezier(.25,.8,.3,1)}
+.cl-sheet.is-turn .cl-scroll>*{animation:none}
+@keyframes clTurn{0%{opacity:0;transform:translateX(22px)}100%{opacity:1;transform:none}}
+/* 页角山水水印 */
+.cl-sheet:after{content:"";position:absolute;right:0;bottom:0;width:62%;height:150px;pointer-events:none;background:url("visual/mountain-panorama.png") right bottom/auto 100% no-repeat;mix-blend-mode:multiply;opacity:.18;
+  -webkit-mask-image:linear-gradient(to bottom,transparent,#000 60%);mask-image:linear-gradient(to bottom,transparent,#000 60%)}
+
+/* 顶栏 */
+.cl-top{display:flex;align-items:center;gap:14px;padding:12px 18px 10px 14px;border-bottom:1px solid var(--rule-content);font-family:var(--font-brand);font-size:13px;color:var(--ink-secondary)}
+.cl-top button{border:0;background:none;font:inherit;color:inherit;cursor:pointer;padding:4px 6px;border-radius:2px}
+.cl-top button:hover{color:var(--deep-teal);background:rgba(12,69,75,.06)}
+.cl-crumb{color:var(--ink-primary)!important}
+.cl-path{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cl-path button{padding:2px 3px}
+.cl-turn{display:flex;align-items:center;gap:2px;font-variant-numeric:tabular-nums}
+.cl-turn button{width:28px;height:26px;font-size:16px;line-height:1;border:1px solid var(--rule-content)!important}
+.cl-turn i{font-style:normal;font-size:11.5px;min-width:42px;text-align:center}
+.cl-close{font-size:22px!important;line-height:1;width:30px;height:30px}
+
+.cl-scroll{position:relative;z-index:1;overflow:auto;padding:26px 46px 40px;scrollbar-width:thin}
+
+/* 标题 */
+.cl-head{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;padding-bottom:16px;margin-bottom:18px;border-bottom:1px solid rgba(20,33,31,.32);position:relative}
+.cl-head:after{content:"";position:absolute;left:0;right:0;bottom:-4px;border-bottom:1px solid rgba(20,33,31,.12)}
+.cl-head h2{margin:0;font-family:var(--font-brand);font-weight:900;font-size:38px;line-height:1.1;letter-spacing:.06em;color:var(--ink-primary)}
+.cl-gap{display:inline-block;width:.18em}
+.cl-meta{margin:10px 0 0;font-family:var(--font-brand);font-size:12.5px;letter-spacing:.12em;color:var(--ink-secondary)}
+.cl-head-r{display:flex;flex-direction:column;align-items:flex-end;gap:12px}
+.cl-head-r .seal{width:34px;height:34px;transform:rotate(-4deg)}
+.cl-edit{min-width:64px;padding:6px 14px;border:1px solid var(--deep-teal);background:transparent;color:var(--deep-teal);font-family:var(--font-brand);font-size:13px;letter-spacing:.1em;cursor:pointer;border-radius:2px}
+.cl-edit:hover{background:var(--deep-teal);color:#f4efe3}
+.cl-lead{margin:-4px 0 22px;font-family:"LXGW WenKai Local","LXGW WenKai",var(--font-brand);font-size:15.5px;line-height:1.85;letter-spacing:.06em;color:var(--ink-primary);padding-left:14px;border-left:2px solid var(--cinnabar)}
+
+/* 条目 */
+.cl-items{list-style:none;margin:0;padding:0;position:relative}
+.cl-item{display:grid;grid-template-columns:40px 1fr;gap:4px 14px;position:relative}
+.cl-items.is-list .cl-item+.cl-item{margin-top:22px;padding-top:22px;border-top:1px dashed var(--rule-content)}
+.cl-seq{align-self:start;justify-self:center;width:30px;height:30px;font-family:var(--font-brand);font-size:26px;line-height:1.15;color:var(--deep-teal);text-align:center;position:relative;z-index:1}
+.cl-items.is-chain .cl-seq{background:var(--paper-base);border-radius:50%}
+/* 递进：左侧墨青竖线贯穿 */
+.cl-items.is-chain:before{content:"";position:absolute;left:19.5px;top:18px;bottom:18px;width:1px;background:linear-gradient(var(--deep-teal),rgba(12,69,75,.45))}
+.cl-arrow{list-style:none;margin:10px 0 10px 54px;font-family:var(--font-brand);font-size:12px;letter-spacing:.24em;color:var(--ink-secondary)}
+.cl-arrow:before{content:"↓";display:inline-block;margin:0 10px 0 -36px;width:22px;text-align:center;color:var(--deep-teal);font-size:13px;background:var(--paper-base)}
+.cl-body h3{margin:2px 0 0;font-family:var(--font-brand);font-weight:700;font-size:19px;line-height:1.5;letter-spacing:.04em;color:var(--ink-primary)}
+.cl-nums{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.cl-num{display:inline-flex;align-items:baseline;gap:6px;padding:5px 12px 6px;border:1px solid rgba(12,69,75,.38);background:rgba(250,247,240,.5);border-radius:2px}
+.cl-num b{font-family:var(--font-brand);font-weight:900;font-size:21px;color:var(--deep-teal);font-variant-numeric:lining-nums}
+.cl-num small{font-size:12px;color:var(--ink-secondary);letter-spacing:.04em}
+.cl-forms{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.cl-forms span{padding:2px 10px;border-radius:20px;border:1px solid var(--rule-content);font-size:12.5px;color:var(--ink-primary);background:rgba(250,247,240,.38)}
+.cl-why{margin-top:10px}
+.cl-why summary{display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-brand);font-size:12.5px;letter-spacing:.14em;color:var(--ink-secondary);list-style:none}
+.cl-why summary::-webkit-details-marker{display:none}
+.cl-why summary:after{content:"⌄";font-size:12px;transition:transform .2s}
+.cl-why[open] summary:after{transform:rotate(180deg)}
+.cl-why summary:hover{color:var(--deep-teal)}
+.cl-why p{margin:8px 0 0;font-size:13.5px;line-height:1.95;color:#4a524d;text-indent:2em;animation:clFade .25s ease}
+@keyframes clFade{from{opacity:0;transform:translateY(-3px)}}
+.cl-links{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px}
+.cl-links button,.cl-back button,.cl-gate-go{border:0;background:none;padding:2px 0;font-family:var(--font-brand);font-size:12.5px;color:var(--deep-teal);cursor:pointer;border-bottom:1px solid rgba(12,69,75,.35)}
+.cl-links button:hover,.cl-back button:hover,.cl-gate-go:hover{border-bottom-color:var(--deep-teal)}
+.cl-item.is-flash .cl-body{animation:clFlash 1.5s ease}
+@keyframes clFlash{0%,35%{background:rgba(176,73,52,.12);box-shadow:0 0 0 8px rgba(176,73,52,.12)}100%{background:transparent;box-shadow:0 0 0 8px transparent}}
+
+.cl-back{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 16px;margin-top:30px;padding-top:14px;border-top:1px solid var(--rule-content)}
+.cl-back>span{font-family:var(--font-brand);font-size:12px;letter-spacing:.16em;color:var(--ink-secondary)}
+.cl-empty{margin:18px 0 0;font-family:var(--font-brand);font-size:14px;color:var(--ink-secondary);letter-spacing:.06em}
+.cl-gate{padding:8px 0}
+.cl-gate p{margin:0 0 14px;font-size:15px;line-height:1.85}
+.cl-gate-go{font-size:15px}
+
+/* 编辑态 */
+.cl-meta-edit{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:10px;font-size:12.5px;color:var(--ink-secondary)}
+.cl-meta-edit select,.cl-meta-edit input{margin-left:4px;padding:3px 6px;border:1px solid var(--rule-content);background:rgba(250,247,240,.6);font:inherit;color:var(--ink-primary);border-radius:2px}
+.cl-meta-edit input{width:92px}
+.cl-lead-in{width:100%;margin:-4px 0 18px;padding:8px 10px;border:1px dashed var(--rule-content);background:rgba(250,247,240,.5);font-family:"LXGW WenKai Local",var(--font-brand);font-size:14.5px;line-height:1.7;color:var(--ink-primary);resize:vertical;border-radius:2px}
+.cl-items.is-edit:before{display:none}
+.cl-item.is-edit{grid-template-columns:18px 34px 1fr;padding:14px 12px 12px 6px;margin:0 0 12px!important;border:1px solid var(--rule-content)!important;background:rgba(250,247,240,.42);border-radius:3px}
+.cl-item.is-edit .cl-seq{font-size:21px;background:none}
+.cl-handle{cursor:grab;color:var(--ink-faint);font-size:16px;line-height:1.8;user-select:none}
+.cl-item.is-drag{opacity:.45}
+.cl-item.is-over{box-shadow:0 -3px 0 var(--deep-teal)}
+.cl-fld{display:grid;grid-template-columns:52px 1fr;align-items:start;gap:8px;margin-bottom:8px}
+.cl-fld>span{padding-top:7px;font-family:var(--font-brand);font-size:12px;letter-spacing:.1em;color:var(--ink-secondary)}
+.cl-fld input,.cl-fld textarea,.cl-fld select{width:100%;padding:6px 8px;border:1px solid var(--rule-content);background:rgba(252,250,245,.75);font-family:var(--font-reading);font-size:13.5px;color:var(--ink-primary);border-radius:2px}
+.cl-fld input[data-f="t"]{font-family:var(--font-brand);font-weight:700;font-size:15px}
+.cl-fld textarea{resize:vertical;line-height:1.7}
+.cl-fld input:focus,.cl-fld textarea:focus,.cl-fld select:focus,.cl-lead-in:focus,.cl-meta-edit :focus{outline:none;border-color:var(--deep-teal);box-shadow:0 0 0 2px rgba(12,69,75,.12)}
+.cl-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.cl-num-in,.cl-link-in{display:inline-flex;align-items:center;gap:3px}
+.cl-num-in input:first-child{width:70px}
+.cl-num-in input:nth-child(2){width:130px}
+.cl-link-in select{width:auto;min-width:150px}
+.cl-num-in button,.cl-link-in button{width:22px;height:22px;border:0;background:none;color:var(--ink-secondary);cursor:pointer;font-size:15px}
+.cl-num-in button:hover,.cl-link-in button:hover{color:var(--cinnabar)}
+.cl-mini{padding:4px 10px;border:1px dashed var(--rule-content);background:none;font-size:12px;color:var(--deep-teal);cursor:pointer;border-radius:2px}
+.cl-item-ops{display:flex;gap:6px;justify-content:flex-end;margin-top:4px}
+.cl-item-ops button{padding:3px 9px;border:1px solid var(--rule-content);background:none;font-size:12px;color:var(--ink-secondary);cursor:pointer;border-radius:2px}
+.cl-item-ops .cl-del:hover{color:var(--cinnabar);border-color:rgba(176,73,52,.5)}
+.cl-add{display:block;width:100%;margin-top:6px;padding:12px;border:1px dashed rgba(12,69,75,.45);background:rgba(250,247,240,.3);font-family:var(--font-brand);font-size:14px;letter-spacing:.12em;color:var(--deep-teal);cursor:pointer;border-radius:3px}
+.cl-add:hover{background:rgba(12,69,75,.06)}
+.cl-sheet button:focus-visible,.cl-sheet summary:focus-visible{outline:2px solid var(--deep-teal);outline-offset:2px}
+
+/* 罗盘节点：可点提示 */
+.map-node{cursor:pointer;transition:transform .2s ease,box-shadow .2s ease}
+.map-node:hover{transform:scale(1.06);box-shadow:0 0 0 3px rgba(238,233,221,.9),0 0 0 4px rgba(12,69,75,.45)}
+
+@media (max-width:760px){
+  .cl-sheet{width:100vw;height:100vh;max-height:none;border-radius:0;box-shadow:none}
+  .cl-scroll{padding:18px 18px 30px}
+  .cl-head h2{font-size:30px}
+  .cl-item.is-edit{grid-template-columns:14px 26px 1fr}
+  .cl-fld{grid-template-columns:1fr}
+  .cl-fld>span{padding-top:0}
+}
+@media (prefers-reduced-motion:reduce){
+  .cl-sheet,.cl-veil,.cl-scroll>*,.cl-sheet.is-turn .cl-scroll,#cardLayer.is-closing .cl-sheet{animation-duration:.01s!important;animation-delay:0s!important}
+}

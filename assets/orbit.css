@@ -40,12 +40,10 @@
     radial-gradient(circle at 33% 27%,rgba(255,254,250,.98),rgba(255,254,250,0) 40%),
     radial-gradient(circle at 72% 80%,rgba(12,69,75,.13),rgba(12,69,75,0) 55%),
     radial-gradient(circle at 50% 50%,#f5f1e7 0,#efe9dc 66%,#e2dac8 100%);
+  /* 只留一道背光面的淡影和纸色描边环（不加外晕、落影、内高光） */
   box-shadow:
-    inset -4px -6px 10px -6px rgba(16,40,40,.26),
-    inset 2px 3px 6px -3px rgba(255,255,255,.9),
-    0 0 0 3px rgba(238,233,221,.7),
-    0 0 14px 2px rgba(244,240,229,.55),
-    0 7px 12px -8px rgba(20,36,34,.34);
+    inset -4px -6px 10px -6px rgba(16,40,40,.22),
+    0 0 0 3px rgba(238,233,221,.7);
   cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-user-drag:none;
   transition:transform .25s ease,box-shadow .25s ease;
 }
@@ -75,11 +73,8 @@
 .life-map[data-compass] .map-node.orb b,
 .life-map[data-compass] .map-node.orb small{position:relative;z-index:1;text-shadow:0 0 6px rgba(246,242,232,.95),0 0 2px rgba(246,242,232,.95)}
 .life-map[data-compass] .map-node.orb:hover{transform:scale(1.07);box-shadow:
-  inset -6px -8px 14px -6px rgba(16,40,40,.32),
-  inset 3px 4px 8px -4px rgba(255,255,255,.8),
-  0 0 0 3px rgba(238,233,221,.9),0 0 0 4px rgba(12,69,75,.42),
-  0 0 20px 3px rgba(240,235,222,.65),
-  0 10px 16px -8px rgba(20,36,34,.42)}
+  inset -4px -6px 10px -6px rgba(16,40,40,.22),
+  0 0 0 3px rgba(238,233,221,.9),0 0 0 4px rgba(12,69,75,.42)}
 .life-map[data-compass] .map-node.orb:focus-visible{outline:2px solid var(--deep-teal);outline-offset:5px}
 .life-map[data-compass] .map-add{width:54px;height:54px;margin:-27px}
 /* 「新增」压在节点之上（orbit.js 还会让它避开节点），任何模式下都点得到 */
@@ -98,9 +93,8 @@
     radial-gradient(circle at 50% 50%,#f5f1e7 0,#efe9dc 66%,#e2dac8 100%);
   box-shadow:
     inset 0 0 0 40px rgba(7,87,90,calc(var(--night) * .2)),
-    inset -4px -6px 10px -6px rgba(16,40,40,.26),
-    0 0 0 3px rgba(238,233,221,.7),
-    0 7px 12px -8px rgba(20,36,34,.34);
+    inset -4px -6px 10px -6px rgba(16,40,40,.22),
+    0 0 0 3px rgba(238,233,221,.7);
   transition:transform .25s ease,box-shadow .25s ease,--night 1.2s ease}
 .life-map[data-compass="b"] .map-node.orb.is-night{--night:1}
 

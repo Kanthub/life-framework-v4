@@ -22,7 +22,7 @@
   var D = 524;                          // 设计稿画布边长（viewBox -262 -262 524 524）
   var R_MIN = 104, R_MAX = 172, R_HOME = 119;   // 标准半径（VIEW 单位）：上下限、默认轨道
   var SNAP = 13;                        // 吸附距离（设计稿单位）
-  var SLOW = 3;                         // 底图（太极、八卦、阴阳鱼）的自转比设计稿慢 3 倍
+  var SLOW = 1;                         // 底图（太极、八卦、阴阳鱼）的自转与旧版同速：甲 6°/秒、乙 4°/秒、丙 7°/秒（中档；随档位倍率）
   var PHASE_KEY = 'kongwo-orbit';
   var STYLE_KEY = 'kongwo-compass-style';
   var SPEED_KEY = 'kongwo-compass-speed';
@@ -195,190 +195,80 @@
   function dirs(p, R) {
     [['上', '精力', 0], ['守', '平衡', 90], ['下', '恢复', 180], ['进', '行动', 270]].forEach(function (d) {
       var q = pt(d[2], R);
-      txt(p, d[0], { x: q[0], y: q[1] + 2, 'font-size': 15, 'font-weight': 700, fill: INK, 'fill-opacity': .92 });
-      txt(p, d[1], { x: q[0], y: q[1] + 14.5, 'font-size': 8.5, fill: '#626964', 'letter-spacing': '.12em' });
-      // 方位针：朱砂小菱形 + 两侧短横，压在刻度环内缘
-      var m = pt(d[2], R - 18), a = d[2];
-      svg('path', { d: 'M0,-3.6L2.2,0L0,3.6L-2.2,0Z', fill: RED, transform: 'translate(' + m[0].toFixed(2) + ' ' + m[1].toFixed(2) + ') rotate(' + a + ')' }, p);
-      svg('path', { d: 'M-9,0H-4M4,0H9', stroke: RED, 'stroke-opacity': .45, 'stroke-width': .7, transform: 'translate(' + m[0].toFixed(2) + ' ' + m[1].toFixed(2) + ') rotate(' + a + ')' }, p);
+      txt(p, d[0], { x: q[0], y: q[1] + 2, 'font-size': 16, 'font-weight': 700, fill: INK });
+      txt(p, d[1], { x: q[0], y: q[1] + 15, 'font-size': 9.5, fill: '#626964' });
+      var m = pt(d[2], R - 18); svg('circle', { cx: m[0], cy: m[1], r: 2.4, fill: RED }, p);
     });
   }
   function rot(g, deg) { g.setAttribute('transform', 'rotate(' + deg.toFixed(2) + ')'); }
 
-  /* ———— 底图细节（静态）：画在单独的 base 图层（最底层），不随帧重绘；全部按 S.orbits / 子午圈的几何生成，
-     线宽、透明度都压在运行模式装饰与拖动辅助线之下 ———— */
-  var uid = 0;
-  function grad(defs, tag, at, stops) {
-    var g = svg(tag, Object.assign({ id: 'cmpG' + (++uid) }, at), defs);
-    stops.forEach(function (s) { svg('stop', { offset: s[0], 'stop-color': s[1], 'stop-opacity': s[2] }, g); });
-    return 'url(#' + g.id + ')';
-  }
-  // 细刻度：一条 path 画完（n 等分，跳过 skip 的整倍数，那里已有长刻度）
-  function fineTicks(p, R, n, skip, L, op) {
-    var d = '';
-    for (var i = 0; i < n; i++) {
-      if (skip && i % skip === 0) continue;
-      var a = i * 360 / n, o = pt(a, R), q = pt(a, R - L);
-      d += 'M' + o[0].toFixed(2) + ',' + o[1].toFixed(2) + 'L' + q[0].toFixed(2) + ',' + q[1].toFixed(2);
-    }
-    return svg('path', { d: d, stroke: INK, 'stroke-opacity': op, 'stroke-width': .6, fill: 'none' }, p);
-  }
-  // 盘面纸色晕染：中心提亮、外缘一圈淡墨，像宣纸上洇开的墨边
-  function paperWash(s, defs, R) {
-    svg('circle', { r: R, fill: grad(defs, 'radialGradient', { r: '.5', cx: '.5', cy: '.5' }, [[0, '#fffdf6', .3], [.6, '#fffdf6', .06], [.93, '#14211f', 0], [1, '#14211f', .045]]) }, s);
-    // 左上一片淡青墨晕，右下纸光，避免平涂
-    svg('circle', { r: R, fill: grad(defs, 'radialGradient', { r: '.55', cx: '.3', cy: '.28' }, [[0, '#07575a', .03], [1, '#07575a', 0]]) }, s);
-    svg('circle', { r: R, fill: grad(defs, 'radialGradient', { r: '.5', cx: '.74', cy: '.78' }, [[0, '#14211f', .02], [1, '#14211f', 0]]) }, s);
-  }
-  // 每条轨道旁一条极淡的伴线（刻线双轨）；几何照抄 S.orbits
-  function railCircles(s) {
-    S.orbits.forEach(function (r) {
-      svg('circle', { r: r + 2.6, fill: 'none', stroke: INK, 'stroke-opacity': .07, 'stroke-width': .5 }, s);
-      svg('circle', { r: r - 2.6, fill: 'none', stroke: INK, 'stroke-opacity': .05, 'stroke-width': .5 }, s);
-    });
-  }
-  // 外圈刻度带：内外两道细边 + 1° 细刻度
-  function rimBand(s, R, inner) {
-    svg('circle', { r: R + 4, fill: 'none', stroke: INK, 'stroke-opacity': .22, 'stroke-width': .6 }, s);
-    svg('circle', { r: inner, fill: 'none', stroke: INK, 'stroke-opacity': .12, 'stroke-width': .5 }, s);
-    fineTicks(s, R, 360, 5, 2.6, .2);
-  }
-  // 太极的立体感：落影 + 固定在左上的柔光（不随太极转）
-  function ballShade(s, defs, R) {
-    var sh = svg('g', {}, s);
-    svg('circle', { r: R + 7, fill: grad(defs, 'radialGradient', {}, [[R / (R + 7), '#14211f', .16], [1, '#14211f', 0]]) }, sh);
-    return function (p) {
-      svg('circle', { r: R, fill: grad(defs, 'radialGradient', { cx: '.34', cy: '.28', r: '.85' }, [[0, '#fff', .3], [.45, '#fff', .04], [.8, '#061c1c', 0], [1, '#061c1c', .22]]), 'pointer-events': 'none' }, p);
-      svg('circle', { r: R - 3, fill: 'none', stroke: '#fff', 'stroke-opacity': .25, 'stroke-width': .6 }, p);
-    };
-  }
-
   // 甲：太极星盘 —— 太极自转、先天八卦逆转、三条轨道、节点拖墨色轨迹、二十四节气刻度
   function buildA() {
-    var base = layer('base'), bd = svg('defs', {}, base);
-    paperWash(base, bd, 226);
-    rimBand(base, 226, 216);
-    railCircles(base);
-    // 节气带：二十四节气每个一粒小点，二分二至点朱砂；节气字仍隔三个写一个
-    for (var i = 0; i < 24; i++) { var q0 = pt(i * 15 + 7.5, 212); svg('circle', { cx: q0[0].toFixed(2), cy: q0[1].toFixed(2), r: i % 6 === 3 ? 1.5 : .9, fill: i % 6 === 3 ? RED : INK, 'fill-opacity': i % 6 === 3 ? .55 : .3 }, base); }
-    svg('circle', { r: 194, fill: 'none', stroke: INK, 'stroke-opacity': .1, 'stroke-width': .5, 'stroke-dasharray': '.6 2.4' }, base);
-    // 八卦环外缘的回纹细刻（64 分，暗合六十四卦）
-    svg('circle', { r: 101.5, fill: 'none', stroke: INK, 'stroke-opacity': .16, 'stroke-width': .5 }, base);
-    fineTicks(base, 101.5, 64, 0, -2.2, .22);
-    var shade = ballShade(base, bd, 66);
-    var s = layer('back'), defs = svg('defs', {}, s);
-    svg('circle', { r: 226, fill: 'none', stroke: INK, 'stroke-opacity': .72, 'stroke-width': .9 }, s);
-    svg('circle', { r: 212, fill: 'none', stroke: INK, 'stroke-opacity': .26, 'stroke-width': .7 }, s);
+    var s = layer('back');
+    svg('circle', { r: 226, fill: 'none', stroke: INK, 'stroke-opacity': .75 }, s);
+    svg('circle', { r: 212, fill: 'none', stroke: INK, 'stroke-opacity': .3 }, s);
     ticks(s, 226, 72, 3);
     var terms = ['立春', '雨水', '惊蛰', '春分', '清明', '谷雨', '立夏', '小满', '芒种', '夏至', '小暑', '大暑', '立秋', '处暑', '白露', '秋分', '寒露', '霜降', '立冬', '小雪', '大雪', '冬至', '小寒', '大寒'];
-    terms.forEach(function (t, i) { if (i % 3) return; var a = i * 15 + 7.5, q = pt(a, 202.5); txt(s, t, { x: q[0], y: q[1] + 3, 'font-size': 7.5, 'letter-spacing': '.15em', fill: '#7d827b', transform: 'rotate(' + a + ' ' + q[0] + ' ' + q[1] + ')' }); });
-    S.orbits.forEach(function (r, i) { svg('circle', { r: r, fill: 'none', stroke: i == 1 ? INK : TEAL, 'stroke-width': i == 1 ? .8 : .9, 'stroke-opacity': i == 1 ? .32 : .4, 'stroke-dasharray': i == 0 ? '3 4' : i == 2 ? '1 5' : 'none', 'stroke-linecap': 'round' }, s); });
+    terms.forEach(function (t, i) { if (i % 3) return; var a = i * 15 + 7.5, q = pt(a, 203); txt(s, t, { x: q[0], y: q[1] + 2.5, 'font-size': 7, fill: '#898c85', transform: 'rotate(' + a + ' ' + q[0] + ' ' + q[1] + ')' }); });
+    S.orbits.forEach(function (r, i) { svg('circle', { r: r, fill: 'none', stroke: i == 1 ? INK : TEAL, 'stroke-opacity': i == 1 ? .35 : .4, 'stroke-dasharray': i == 0 ? '3 4' : i == 2 ? '1 5' : 'none' }, s); });
     dirs(s, 246);
     var gua = svg('g', {}, s);
-    svg('circle', { r: 79, fill: 'none', stroke: INK, 'stroke-opacity': .45, 'stroke-width': .8 }, gua);
-    svg('circle', { r: 98, fill: 'none', stroke: INK, 'stroke-opacity': .45, 'stroke-width': .8 }, gua);
-    svg('circle', { r: 96, fill: 'none', stroke: INK, 'stroke-opacity': .14, 'stroke-width': .5 }, gua);
-    // 先天八卦（上为乾，顺时针 乾 巽 坎 艮 坤 震 离 兑），爻由内向外为初、二、三爻；卦名写在卦符内侧
-    var NAMES = '乾巽坎艮坤震离兑';
+    svg('circle', { r: 79, fill: 'none', stroke: INK, 'stroke-opacity': .5 }, gua);
+    svg('circle', { r: 98, fill: 'none', stroke: INK, 'stroke-opacity': .5 }, gua);
     [[1, 1, 1], [0, 1, 1], [0, 1, 0], [0, 0, 1], [0, 0, 0], [1, 0, 0], [1, 0, 1], [1, 1, 0]].forEach(function (lines, k) {
-      var g = svg('g', { transform: 'rotate(' + k * 45 + ')' }, gua), d = '';
+      var g = svg('g', { transform: 'rotate(' + k * 45 + ')' }, gua);
       lines.forEach(function (yang, j) {
         var y = -(83 + j * 5.5);
-        d += yang ? 'M-7,' + y + 'H7' : 'M-7,' + y + 'H-1.6M1.6,' + y + 'H7';
+        if (yang) svg('line', { x1: -7, x2: 7, y1: y, y2: y, stroke: INK, 'stroke-width': 2.4 }, g);
+        else { svg('line', { x1: -7, x2: -1.6, y1: y, y2: y, stroke: INK, 'stroke-width': 2.4 }, g); svg('line', { x1: 1.6, x2: 7, y1: y, y2: y, stroke: INK, 'stroke-width': 2.4 }, g); }
       });
-      svg('path', { d: d, stroke: INK, 'stroke-opacity': .85, 'stroke-width': 2.3 }, g);
-      txt(g, NAMES[k], { y: -70.5, 'font-size': 6.5, fill: INK, 'fill-opacity': .55 });
-      svg('circle', { cy: -88, r: 1.5, fill: RED, 'fill-opacity': .8, transform: 'rotate(22.5)' }, g);
+      svg('circle', { cy: -88, r: 1.6, fill: RED, transform: 'rotate(22.5)' }, g);
     });
-    svg('circle', { r: 66, fill: PAPER, stroke: INK, 'stroke-opacity': .55, 'stroke-width': .8 }, s);
-    svg('circle', { r: 64, fill: 'none', stroke: INK, 'stroke-opacity': .15, 'stroke-width': .5 }, s);
-    var tj = taiji(s, 62, grad(defs, 'linearGradient', { x1: '0', y1: '0', x2: '1', y2: '1' }, [[0, '#0b6d70', 1], [1, '#05474a', 1]]), '#f6f2e8');
-    shade(s);
+    svg('circle', { r: 66, fill: PAPER, stroke: INK, 'stroke-opacity': .6 }, s);
+    var tj = taiji(s, 62, TEAL, '#f6f2e8');
     art.trails = svg('g', {}, s);
     art.frame = function (t) { rot(tj, t * 6 / SLOW); rot(gua, -t * 2.5 / SLOW); };
   }
 
   // 乙：阴阳昼夜 —— 淡阴阳鱼铺满盘面缓慢旋转，中心青绿太阳，四条轨道阳顺阴逆
   function buildB() {
-    var base = layer('base'), bd = svg('defs', {}, base);
-    paperWash(base, bd, 226);
-    // 昼夜：上半纸光（昼）、下半一层极淡的青墨（夜），中间晨昏线两侧柔和过渡
-    svg('circle', { r: 226, fill: grad(bd, 'linearGradient', { x1: '0', y1: '0', x2: '0', y2: '1' }, [[0, '#fffaf0', .22], [.46, '#fffaf0', 0], [.54, '#0b3d3e', 0], [1, '#0b3d3e', .07]]) }, base);
-    svg('path', { d: 'M-226,0H226', stroke: INK, 'stroke-opacity': .08, 'stroke-width': .5, 'stroke-dasharray': '1 4' }, base);
-    rimBand(base, 226, 216);
-    railCircles(base);
-    // 日、月：昼半边一轮小日（纸白 + 朱砂芯），夜半边一弯月；淡于潮汐月亮，位置避开潮汐月（45°）与四方位字
-    var sun = pt(-28, 214), moon = pt(152, 214);
-    var sg = svg('g', { transform: 'translate(' + sun[0].toFixed(1) + ' ' + sun[1].toFixed(1) + ')', opacity: .5 }, base);
-    svg('circle', { r: 4.2, fill: '#fbf6ea', stroke: RED, 'stroke-opacity': .6, 'stroke-width': .7 }, sg);
-    svg('circle', { r: 1.5, fill: RED, 'fill-opacity': .7 }, sg);
-    var rays = ''; for (var k = 0; k < 8; k++) { var a = pt(k * 45, 6), b = pt(k * 45, 8.4); rays += 'M' + a[0].toFixed(2) + ',' + a[1].toFixed(2) + 'L' + b[0].toFixed(2) + ',' + b[1].toFixed(2); }
-    svg('path', { d: rays, stroke: RED, 'stroke-opacity': .5, 'stroke-width': .7 }, sg);
-    svg('path', { d: 'M1.5,-4.4A4.6,4.6 0 1 0 1.5,4.4A3.6,3.6 0 1 1 1.5,-4.4Z', fill: '#2b3b38', 'fill-opacity': .32, stroke: INK, 'stroke-opacity': .4, 'stroke-width': .5, transform: 'translate(' + moon[0].toFixed(1) + ' ' + moon[1].toFixed(1) + ') rotate(-20)' }, base);
-    txt(base, '昼', { x: (sun[0] + 14).toFixed(1), y: (sun[1] + 3).toFixed(1), 'font-size': 7, fill: '#7d827b', 'fill-opacity': .7 });
-    txt(base, '夜', { x: (moon[0] - 14).toFixed(1), y: (moon[1] + 3).toFixed(1), 'font-size': 7, fill: '#7d827b', 'fill-opacity': .7 });
-    // 太阳四周一圈细芒：24 道，长短相间
-    var ray = ''; for (k = 0; k < 48; k++) { var o = pt(k * 7.5, 70), q = pt(k * 7.5, k % 2 ? 72.5 : 75); ray += 'M' + o[0].toFixed(2) + ',' + o[1].toFixed(2) + 'L' + q[0].toFixed(2) + ',' + q[1].toFixed(2); }
-    svg('path', { d: ray, stroke: TEAL, 'stroke-opacity': .22, 'stroke-width': .6 }, base);
-    var s = layer('back'), defs = svg('defs', {}, s);
-    var cl = svg('clipPath', { id: 'cmpBclip' }, defs); svg('circle', { r: 226 }, cl);
+    var s = layer('back');
+    var cl = svg('clipPath', { id: 'cmpBclip' }, svg('defs', {}, s)); svg('circle', { r: 226 }, cl);
     var wash = svg('g', { 'clip-path': 'url(#cmpBclip)' }, s);
     var big = taiji(wash, 226, 'rgba(7,87,90,.085)', 'rgba(255,255,255,0)');
-    svg('circle', { r: 226, fill: 'none', stroke: INK, 'stroke-opacity': .72, 'stroke-width': .9 }, s);
+    svg('circle', { r: 226, fill: 'none', stroke: INK, 'stroke-opacity': .75 }, s);
     ticks(s, 226, 48, 4);
     dirs(s, 246);
-    S.orbits.forEach(function (r, i) { svg('circle', { r: r, fill: 'none', stroke: i % 2 ? TEAL : INK, 'stroke-width': i % 2 ? 1 : .8, 'stroke-opacity': i % 2 ? .45 : .32, 'stroke-dasharray': i % 2 ? '1.5 4' : 'none', 'stroke-linecap': 'round' }, s); });
+    S.orbits.forEach(function (r, i) { svg('circle', { r: r, fill: 'none', stroke: i % 2 ? TEAL : INK, 'stroke-opacity': i % 2 ? .45 : .35, 'stroke-dasharray': i % 2 ? '1.5 4' : 'none' }, s); });
     // 每条轨道一个小箭头标出顺逆（随方向设定更新，见 markArrows）
-    art.arrows = S.orbits.map(function (r, i) { var a = 200 + i * 8, q = pt(a, r); return svg('path', { fill: 'none', stroke: i % 2 ? TEAL : INK, 'stroke-opacity': .6, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', transform: 'translate(' + q[0] + ' ' + q[1] + ') rotate(' + a + ')' }, s); });
+    art.arrows = S.orbits.map(function (r, i) { var a = 200 + i * 8, q = pt(a, r); return svg('path', { fill: 'none', stroke: i % 2 ? TEAL : INK, 'stroke-opacity': .6, transform: 'translate(' + q[0] + ' ' + q[1] + ') rotate(' + a + ')' }, s); });
     markArrows();
-    // 中心青绿太阳：外晕渐隐、纸色细边、日面由中心向边缘加深，左上一点柔光
-    svg('circle', { r: 70, fill: grad(defs, 'radialGradient', {}, [[58 / 70, TEAL, .3], [.9, TEAL, .12], [1, TEAL, 0]]) }, s);
-    svg('circle', { r: 58, fill: grad(defs, 'radialGradient', { cx: '.42', cy: '.38', r: '.7' }, [[0, '#0c6b6d', 1], [.7, '#07575a', 1], [1, '#043f41', 1]]), stroke: PAPER, 'stroke-width': 4 }, s);
-    svg('circle', { r: 58, fill: grad(defs, 'radialGradient', { cx: '.33', cy: '.27', r: '.6' }, [[0, '#fff', .16], [1, '#fff', 0]]) }, s);
-    svg('circle', { r: 53, fill: 'none', stroke: '#cfe0dc', 'stroke-opacity': .22, 'stroke-width': .6 }, s);
-    svg('circle', { r: 62, fill: 'none', stroke: TEAL, 'stroke-width': .9 }, s);
+    svg('circle', { r: 64, fill: 'none', stroke: TEAL, 'stroke-opacity': .25, 'stroke-width': 10 }, s);
+    svg('circle', { r: 58, fill: TEAL, stroke: PAPER, 'stroke-width': 4 }, s);
+    svg('circle', { r: 62, fill: 'none', stroke: TEAL }, s);
     art.frame = function (t) { art.wash = norm(t * 4 / SLOW); rot(big, art.wash); };
   }
 
   // 丙：浑天仪 —— 三条倾斜椭圆轨道，后半在太极球之下、前半在其上，节点随纵深缩放
   function buildC() {
-    var base = layer('base'), bd = svg('defs', {}, base);
-    paperWash(base, bd, 226);
-    rimBand(base, 219, 212);
-    // 十二辰：刻度带内侧一圈小字（子在下、午在上，与子午圈同向）
-    '午未申酉戌亥子丑寅卯辰巳'.split('').forEach(function (c, i) {
-      var a = i * 30 + 15, q = pt(a, 207);
-      txt(base, c, { x: q[0].toFixed(2), y: (q[1] + 2.4).toFixed(2), 'font-size': 6.5, fill: '#7d827b', 'fill-opacity': .75, transform: 'rotate(' + a + ' ' + q[0].toFixed(2) + ' ' + q[1].toFixed(2) + ')' });
-    });
-    // 子午圈的度数刻：每 10° 一刻，照 S.meridian 的椭圆生成（节点仍按原椭圆吸附）
-    var mt = '', M = S.meridian;
-    for (var k = 0; k < 36; k++) {
-      var th = k * 10 * Math.PI / 180, x = M.rx * Math.cos(th), y = M.ry * Math.sin(th), nx = Math.cos(th) / M.rx, ny = Math.sin(th) / M.ry, nl = Math.hypot(nx, ny), L = k % 9 ? 2.2 : 4;
-      mt += 'M' + x.toFixed(2) + ',' + y.toFixed(2) + 'L' + (x - nx / nl * L).toFixed(2) + ',' + (y - ny / nl * L).toFixed(2);
-    }
-    svg('path', { d: mt, stroke: INK, 'stroke-opacity': .2, 'stroke-width': .6 }, base);
-    svg('ellipse', { rx: M.rx - 3, ry: M.ry - 3, fill: 'none', stroke: INK, 'stroke-opacity': .07, 'stroke-width': .5 }, base);
-    // 太极球下的落影
-    svg('ellipse', { cy: 62, rx: 46, ry: 7, fill: grad(bd, 'radialGradient', {}, [[0, '#14211f', .14], [1, '#14211f', 0]]) }, base);
-    var s = layer('back'), core = layer('core'), front = layer('front'), cd = svg('defs', {}, core);
-    svg('circle', { r: 226, fill: 'none', stroke: INK, 'stroke-opacity': .7, 'stroke-width': .9 }, s);
-    svg('circle', { r: 219, fill: 'none', stroke: INK, 'stroke-opacity': .25, 'stroke-width': .7 }, s);
+    var s = layer('back'), core = layer('core'), front = layer('front');
+    var b = svg('radialGradient', { id: 'cmpCball', cx: '.35', cy: '.3', r: '.8' }, svg('defs', {}, core));
+    svg('stop', { offset: '0', 'stop-color': '#fff', 'stop-opacity': .45 }, b);
+    svg('stop', { offset: '.55', 'stop-color': '#fff', 'stop-opacity': 0 }, b);
+    svg('stop', { offset: '1', 'stop-color': '#061c1c', 'stop-opacity': .45 }, b);
+    svg('circle', { r: 226, fill: 'none', stroke: INK, 'stroke-opacity': .7 }, s);
+    svg('circle', { r: 219, fill: 'none', stroke: INK, 'stroke-opacity': .25 }, s);
     ticks(s, 226, 72, 6);
     dirs(s, 246);
     svg('ellipse', { rx: S.meridian.rx, ry: S.meridian.ry, fill: 'none', stroke: INK, 'stroke-opacity': .22 }, s);   // 子午圈（可吸附）
-    // 轨道是有宽度的铜环：主线之外各加一条贴边细线（同一椭圆略缩），后半在底层虚线，前半在球之上
     S.orbits.forEach(function (rx, i) {
-      var ry = S.ry[i], g = 'rotate(' + S.tilt[i] + ')', rx2 = rx - 3.2, ry2 = ry - 1.6;
+      var ry = S.ry[i], g = 'rotate(' + S.tilt[i] + ')';
       svg('path', { d: 'M' + -rx + ',0A' + rx + ' ' + ry + ' 0 0 1 ' + rx + ',0', fill: 'none', stroke: INK, 'stroke-opacity': .22, 'stroke-dasharray': '2 4', transform: g }, s);
-      svg('path', { d: 'M' + -rx2 + ',0A' + rx2 + ' ' + ry2 + ' 0 0 1 ' + rx2 + ',0', fill: 'none', stroke: INK, 'stroke-opacity': .08, 'stroke-width': .5, transform: g }, s);
-      svg('path', { d: 'M' + rx + ',0A' + rx + ' ' + ry + ' 0 0 1 ' + -rx + ',0', fill: 'none', stroke: i == 1 ? TEAL : INK, 'stroke-opacity': .6, 'stroke-width': 1.2, 'stroke-linecap': 'round', transform: g }, front);
-      svg('path', { d: 'M' + rx2 + ',0A' + rx2 + ' ' + ry2 + ' 0 0 1 ' + -rx2 + ',0', fill: 'none', stroke: i == 1 ? TEAL : INK, 'stroke-opacity': .2, 'stroke-width': .5, transform: g }, front);
+      svg('path', { d: 'M' + rx + ',0A' + rx + ' ' + ry + ' 0 0 1 ' + -rx + ',0', fill: 'none', stroke: i == 1 ? TEAL : INK, 'stroke-opacity': .6, 'stroke-width': 1.3, transform: g }, front);
     });
-    var tj = taiji(core, 56, grad(cd, 'linearGradient', { x1: '0', y1: '0', x2: '1', y2: '1' }, [[0, '#0b6d70', 1], [1, '#05474a', 1]]), '#f6f2e8');
-    svg('circle', { r: 56, fill: grad(cd, 'radialGradient', { cx: '.35', cy: '.3', r: '.8' }, [[0, '#fff', .45], [.55, '#fff', 0], [1, '#061c1c', .45]]), stroke: INK, 'stroke-opacity': .5 }, core);
-    svg('circle', { r: 52.5, fill: 'none', stroke: '#fff', 'stroke-opacity': .22, 'stroke-width': .6 }, core);
+    var tj = taiji(core, 56, TEAL, '#f6f2e8');
+    svg('circle', { r: 56, fill: 'url(#cmpCball)', stroke: INK, 'stroke-opacity': .5 }, core);
     svg('ellipse', { rx: 74, ry: 16, fill: 'none', stroke: RED, 'stroke-opacity': .55, transform: 'rotate(-8)' }, core);
-    svg('ellipse', { rx: 71, ry: 14.6, fill: 'none', stroke: RED, 'stroke-opacity': .18, 'stroke-width': .5, transform: 'rotate(-8)' }, core);
     art.frame = function (t) { rot(tj, t * 7 / SLOW); };
   }
   var BUILD = { a: buildA, b: buildB, c: buildC };

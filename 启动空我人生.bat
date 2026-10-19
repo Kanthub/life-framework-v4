@@ -2,7 +2,7 @@
 chcp 65001 >nul
 cd /d "%~dp0"
 title 空我人生
-python server.py 8765 --open
+python server.py 18765 --open
 if errorlevel 3 exit /b 0
 if errorlevel 1 (
   echo.

@@ -34,17 +34,52 @@
 .life-map[data-compass] .map-node.orb{
   width:54px;height:54px;margin:-27px;padding:3px 2px;
   overflow:visible;isolation:isolate;
-  border:1px solid rgba(20,33,31,.55);
-  background:radial-gradient(75% 75% at 36% 30%,#fffdf8 0,#efe9dc 60%,#ddd4c0 100%);
-  box-shadow:0 0 0 4px rgba(240,235,223,.75);
+  border:1px solid rgba(20,33,31,.5);
+  /* 照旧版：纸色球面 + 左上受光 + 右下一抹青墨晕 */
+  background:
+    radial-gradient(circle at 33% 27%,rgba(255,254,250,.98),rgba(255,254,250,0) 40%),
+    radial-gradient(circle at 72% 80%,rgba(12,69,75,.13),rgba(12,69,75,0) 55%),
+    radial-gradient(circle at 50% 50%,#f5f1e7 0,#efe9dc 66%,#e2dac8 100%);
+  box-shadow:
+    inset -4px -6px 10px -6px rgba(16,40,40,.26),
+    inset 2px 3px 6px -3px rgba(255,255,255,.9),
+    0 0 0 3px rgba(238,233,221,.7),
+    0 0 14px 2px rgba(244,240,229,.55),
+    0 7px 12px -8px rgba(20,36,34,.34);
   cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-user-drag:none;
   transition:transform .25s ease,box-shadow .25s ease;
 }
-.life-map[data-compass] .map-node.orb b{font-size:12.5px;line-height:1.25;white-space:nowrap;color:#14211f}
-.life-map[data-compass] .map-node.orb small{font-size:8.5px;line-height:1.2;margin-top:1px;letter-spacing:.02em;color:#626964;white-space:nowrap}
+/* 球面纹理：淡墨山水在球内缓慢横移（读作自转）；只是一层背景，不改节点尺寸与命中范围 */
+.life-map[data-compass] .map-node.orb:before{
+  content:"";position:absolute;inset:1px;border-radius:50%;z-index:0;pointer-events:none;
+  background:url("visual/mountain-panorama.png") var(--tex,0%) 64%/auto 230% repeat-x;
+  mix-blend-mode:multiply;opacity:.4;
+  -webkit-mask:radial-gradient(circle at 42% 40%,#000 38%,rgba(0,0,0,.25) 72%,transparent 74%);
+          mask:radial-gradient(circle at 42% 40%,#000 38%,rgba(0,0,0,.25) 72%,transparent 74%);
+  animation:orb-spin var(--spin,90s) linear infinite;
+}
+/* 倾斜细环 + 朱砂小卫星（画在盒子外一圈，pointer-events:none，不进碰撞） */
+.life-map[data-compass] .map-node.orb:after{
+  content:"";position:absolute;left:50%;top:50%;width:calc(134% + 9px);height:calc(134% + 9px);margin:calc(-67% - 4.5px);
+  border-radius:50%;pointer-events:none;z-index:-1;
+  background:
+    radial-gradient(circle at 50% 4.5px,#a4412f 0 2.1px,rgba(176,73,52,.22) 2.7px,transparent 4.5px),
+    radial-gradient(circle closest-side,transparent calc(100% - 5px),rgba(12,69,75,.15) calc(100% - 5px),rgba(12,69,75,.15) calc(100% - 4px),transparent calc(100% - 4px));
+  transform:rotate(var(--moon0,0deg));
+  animation:orb-moon var(--moon,20s) linear infinite var(--moon-dir,normal);
+}
+@keyframes orb-spin{to{background-position-x:calc(var(--tex,0%) + 1086px)}}
+@keyframes orb-moon{from{transform:rotate(var(--moon0,0deg))}to{transform:rotate(calc(var(--moon0,0deg) + 360deg))}}
+.life-map[data-compass] .map-node.orb b{font-size:12.5px;line-height:1.25;white-space:nowrap;color:#14211f;letter-spacing:.04em}
+.life-map[data-compass] .map-node.orb small{font-size:8.5px;line-height:1.2;margin-top:1px;letter-spacing:.02em;color:#5a625e;white-space:nowrap}
 .life-map[data-compass] .map-node.orb b,
-.life-map[data-compass] .map-node.orb small{position:relative;z-index:1}
-.life-map[data-compass] .map-node.orb:hover{transform:scale(1.07);box-shadow:0 0 0 4px rgba(240,235,223,.88),0 0 0 5px rgba(7,87,90,.45)}
+.life-map[data-compass] .map-node.orb small{position:relative;z-index:1;text-shadow:0 0 6px rgba(246,242,232,.95),0 0 2px rgba(246,242,232,.95)}
+.life-map[data-compass] .map-node.orb:hover{transform:scale(1.07);box-shadow:
+  inset -6px -8px 14px -6px rgba(16,40,40,.32),
+  inset 3px 4px 8px -4px rgba(255,255,255,.8),
+  0 0 0 3px rgba(238,233,221,.9),0 0 0 4px rgba(12,69,75,.42),
+  0 0 20px 3px rgba(240,235,222,.65),
+  0 10px 16px -8px rgba(20,36,34,.42)}
 .life-map[data-compass] .map-node.orb:focus-visible{outline:2px solid var(--deep-teal);outline-offset:5px}
 .life-map[data-compass] .map-add{width:54px;height:54px;margin:-27px}
 /* 「新增」压在节点之上（orbit.js 还会让它避开节点），任何模式下都点得到 */
@@ -53,11 +88,21 @@
 .compass-art.deco{pointer-events:none}
 
 /* 乙：背光面朝外的阴影；进入阴面时整体染一层青色 */
-.life-map[data-compass="b"] .map-node.orb:before,
-.life-map[data-compass="b"] .map-node.orb:after{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;z-index:0}
-.life-map[data-compass="b"] .map-node.orb:before{background:linear-gradient(var(--out,90deg),rgba(7,87,90,0) 45%,rgba(11,46,47,.42))}
-.life-map[data-compass="b"] .map-node.orb:after{background:#07575a;opacity:0;transition:opacity 1.2s}
-.life-map[data-compass="b"] .map-node.orb.is-night:after{opacity:.2}
+/* （照旧版：背光面放在球面背景的最上层，夜色用 inset 阴影染，靠 @property 缓动 1.2 秒；纹理、卫星照常） */
+@property --night{syntax:"<number>";inherits:true;initial-value:0}
+.life-map[data-compass="b"] .map-node.orb{
+  --night:0;
+  background:
+    linear-gradient(var(--out,90deg),rgba(7,87,90,0) 45%,rgba(11,46,47,.36) 100%),
+    radial-gradient(circle at 33% 27%,rgba(255,254,250,.98),rgba(255,254,250,0) 40%),
+    radial-gradient(circle at 50% 50%,#f5f1e7 0,#efe9dc 66%,#e2dac8 100%);
+  box-shadow:
+    inset 0 0 0 40px rgba(7,87,90,calc(var(--night) * .2)),
+    inset -4px -6px 10px -6px rgba(16,40,40,.26),
+    0 0 0 3px rgba(238,233,221,.7),
+    0 7px 12px -8px rgba(20,36,34,.34);
+  transition:transform .25s ease,box-shadow .25s ease,--night 1.2s ease}
+.life-map[data-compass="b"] .map-node.orb.is-night{--night:1}
 
 /* 丙：纵深 —— 后方变小变淡、在太极球之下；前方在球之上 */
 .life-map[data-compass="c"] #mapNodes>*{scale:var(--k,1)}
@@ -145,8 +190,8 @@
   .compass-cycle b{font-size:11px}
 }
 @media (prefers-reduced-motion:reduce){
-  .life-map[data-compass="b"] .map-node.orb:after,
   .life-map[data-compass] .map-node.orb{transition:none}
+  .life-map[data-compass] .map-node.orb:before,.life-map[data-compass] .map-node.orb:after{animation:none}
 }
 
 /* ---- 精确定位：拖动 / 键盘微调时的读数（罗盘右上角，节点到不了的方框角落）与朱砂对齐辅助线 ---- */

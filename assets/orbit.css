@@ -32,7 +32,8 @@
 
 /* ---- 节点：宣纸星球（左上受光，纸色光晕） ---- */
 .life-map[data-compass] .map-node.orb{
-  width:54px;height:54px;margin:-27px;padding:3px 2px;
+  /* 尺寸照旧版：罗盘宽的 10.6%，至少 54px（罗盘是正方形，高、外边距的百分比也都按罗盘宽算）；orbit.js 的 nodeSize() 用同一规则 */
+  width:max(54px,10.6%);height:max(54px,10.6%);margin:min(-27px,-5.3%);padding:4px 2px;
   overflow:visible;isolation:isolate;
   border:1px solid rgba(20,33,31,.5);
   /* 照旧版：纸色球面 + 左上受光 + 右下一抹青墨晕 */
@@ -40,10 +41,13 @@
     radial-gradient(circle at 33% 27%,rgba(255,254,250,.98),rgba(255,254,250,0) 40%),
     radial-gradient(circle at 72% 80%,rgba(12,69,75,.13),rgba(12,69,75,0) 55%),
     radial-gradient(circle at 50% 50%,#f5f1e7 0,#efe9dc 66%,#e2dac8 100%);
-  /* 只留一道背光面的淡影和纸色描边环（不加外晕、落影、内高光） */
+  /* 照旧版：背光面淡影 + 左上内高光 + 纸色描边环 + 纸色外晕 + 下方落影 */
   box-shadow:
-    inset -4px -6px 10px -6px rgba(16,40,40,.22),
-    0 0 0 3px rgba(238,233,221,.7);
+    inset -4px -6px 10px -6px rgba(16,40,40,.26),
+    inset 2px 3px 6px -3px rgba(255,255,255,.9),
+    0 0 0 3px rgba(238,233,221,.7),
+    0 0 16px 3px rgba(244,240,229,.6),
+    0 7px 12px -8px rgba(20,36,34,.34);
   cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-user-drag:none;
   transition:transform .25s ease,box-shadow .25s ease;
 }
@@ -51,7 +55,7 @@
 .life-map[data-compass] .map-node.orb:before{
   content:"";position:absolute;inset:1px;border-radius:50%;z-index:0;pointer-events:none;
   background:url("visual/mountain-panorama.png") var(--tex,0%) 64%/auto 230% repeat-x;
-  mix-blend-mode:multiply;opacity:.4;
+  mix-blend-mode:multiply;opacity:.42;
   -webkit-mask:radial-gradient(circle at 42% 40%,#000 38%,rgba(0,0,0,.25) 72%,transparent 74%);
           mask:radial-gradient(circle at 42% 40%,#000 38%,rgba(0,0,0,.25) 72%,transparent 74%);
   animation:orb-spin var(--spin,90s) linear infinite;
@@ -68,15 +72,19 @@
 }
 @keyframes orb-spin{to{background-position-x:calc(var(--tex,0%) + 1086px)}}
 @keyframes orb-moon{from{transform:rotate(var(--moon0,0deg))}to{transform:rotate(calc(var(--moon0,0deg) + 360deg))}}
-.life-map[data-compass] .map-node.orb b{font-size:12.5px;line-height:1.25;white-space:nowrap;color:#14211f;letter-spacing:.04em}
-.life-map[data-compass] .map-node.orb small{font-size:8.5px;line-height:1.2;margin-top:1px;letter-spacing:.02em;color:#5a625e;white-space:nowrap}
+.life-map[data-compass] .map-node.orb b{font-size:14px;line-height:1.3;white-space:nowrap;color:#000;letter-spacing:.48px}
+/* 副标题照旧版：放不下就折行显示全文（如「热量·碳脂比·断食」三行），不截断 */
+.life-map[data-compass] .map-node.orb small{font-size:9.5px;line-height:1.25;margin-top:2px;letter-spacing:.04em;color:#5d645e;white-space:normal}
 .life-map[data-compass] .map-node.orb b,
 .life-map[data-compass] .map-node.orb small{position:relative;z-index:1;text-shadow:0 0 6px rgba(246,242,232,.95),0 0 2px rgba(246,242,232,.95)}
 .life-map[data-compass] .map-node.orb:hover{transform:scale(1.07);box-shadow:
-  inset -4px -6px 10px -6px rgba(16,40,40,.22),
-  0 0 0 3px rgba(238,233,221,.9),0 0 0 4px rgba(12,69,75,.42)}
+  inset -6px -8px 14px -6px rgba(16,40,40,.32),
+  inset 3px 4px 8px -4px rgba(255,255,255,.8),
+  0 0 0 3px rgba(238,233,221,.9),0 0 0 4px rgba(12,69,75,.42),
+  0 0 22px 4px rgba(240,235,222,.7),
+  0 10px 16px -8px rgba(20,36,34,.42)}
 .life-map[data-compass] .map-node.orb:focus-visible{outline:2px solid var(--deep-teal);outline-offset:5px}
-.life-map[data-compass] .map-add{width:54px;height:54px;margin:-27px}
+.life-map[data-compass] .map-add{width:max(54px,10.6%);height:max(54px,10.6%);margin:min(-27px,-5.3%)}
 /* 「新增」压在节点之上（orbit.js 还会让它避开节点），任何模式下都点得到 */
 .life-map[data-compass] #mapNodes>.map-add{z-index:5}
 .life-map[data-compass="c"] #mapNodes>.map-add{z-index:6}
@@ -88,13 +96,14 @@
 .life-map[data-compass="b"] .map-node.orb{
   --night:0;
   background:
-    linear-gradient(var(--out,90deg),rgba(7,87,90,0) 45%,rgba(11,46,47,.36) 100%),
+    linear-gradient(var(--out,90deg),rgba(7,87,90,0) 45%,rgba(11,46,47,.32) 100%),
     radial-gradient(circle at 33% 27%,rgba(255,254,250,.98),rgba(255,254,250,0) 40%),
     radial-gradient(circle at 50% 50%,#f5f1e7 0,#efe9dc 66%,#e2dac8 100%);
   box-shadow:
     inset 0 0 0 40px rgba(7,87,90,calc(var(--night) * .2)),
-    inset -4px -6px 10px -6px rgba(16,40,40,.22),
-    0 0 0 3px rgba(238,233,221,.7);
+    inset -4px -6px 10px -6px rgba(16,40,40,.26),
+    0 0 0 3px rgba(238,233,221,.7),
+    0 7px 12px -8px rgba(20,36,34,.34);
   transition:transform .25s ease,box-shadow .25s ease,--night 1.2s ease}
 .life-map[data-compass="b"] .map-node.orb.is-night{--night:1}
 
@@ -174,9 +183,7 @@
 .life-map[data-compass] .map-node.orb.is-yin small{color:#cfe0dc}
 
 @media (max-width:760px){
-  .life-map[data-compass] .map-node.orb,.life-map[data-compass] .map-add{width:46px;height:46px;margin:-23px}
-  .life-map[data-compass] .map-node.orb b{font-size:11px}
-  .life-map[data-compass] .map-node.orb small{font-size:7.5px}
+  .life-map[data-compass] .map-node.orb,.life-map[data-compass] .map-add{width:max(46px,10.6%);height:max(46px,10.6%);margin:min(-23px,-5.3%)}
   .life-map[data-compass]{width:min(400px,96%)}
   .compass-switch button{font-size:11px;padding:2px 8px}
   .compass-cycle{padding:2px 6px}

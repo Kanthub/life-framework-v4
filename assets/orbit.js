@@ -524,13 +524,7 @@
       var b = el.querySelector('b'); b.style.fontSize = '';
       var room = el.clientWidth - 2, w = b.scrollWidth;
       if (w > room) b.style.fontSize = (parseFloat(getComputedStyle(b).fontSize) * room / w).toFixed(1) + 'px';
-      // 副标题（如「热量·碳脂比·断食」）字已经很小，不再缩：放不下就只留前几段，全文放进悬停提示
-      var s = el.querySelector('small'); if (!s) return;
-      var full = n.s == null ? s.textContent : String(n.s), parts = full.split(/\s*[·・、，,/]\s*/), k = parts.length;
-      s.textContent = full;
-      while (k > 1 && s.scrollWidth > room + 4) s.textContent = parts.slice(0, --k).join('·') + (k < parts.length ? '…' : '');
-      if (s.scrollWidth > room + 4) { s.style.maxWidth = room + 'px'; s.style.overflow = 'hidden'; s.style.textOverflow = 'ellipsis'; }
-      if (s.textContent !== full) el.title = n.t + ' · ' + full + '\n' + el.title;
+      // 副标题照旧版：显示全文，放不下就折行（如「热量·碳脂比·断食」），不截断
     });
     // 甲：每个节点后面拖一小段墨色轨迹
     if (art.trails) {
@@ -553,7 +547,10 @@
     var n = q && q.d === active && domains[active] && domains[active].nodes[q.i];
     pin = n && n.t === q.t ? q.i : -1;
   }
-  function nodeSize() { return 54 * D / (map.clientWidth || 435); }        // 节点直径（设计稿单位）
+  // 节点直径（设计稿单位）：与 orbit.css 同一规则（照旧版）——罗盘宽的 10.6%，至少 54px（窄屏 46px）
+  var NARROW = window.matchMedia ? window.matchMedia('(max-width:760px)') : null;
+  function nodePx(cw) { return Math.max(NARROW && NARROW.matches ? 46 : 54, .106 * cw); }
+  function nodeSize() { var cw = map.clientWidth || 435; return nodePx(cw) * D / cw; }
   function avoid(ms, dt) {
     var need = nodeSize() * 1.04, tgt = ms.map(function () { return 0; }), tga = tgt.slice(), big = tgt.map(function () { return 1; });
     if (motion !== 'sync' && motion !== 'breath') {
@@ -618,7 +615,7 @@
   }
   // 泊位（百分比）：按钮外沿离方框留 6 个设计稿单位；方框太小时至少离开节点的最大活动半径
   function berth(add) {
-    var h = (add.offsetWidth || 54) / 2 * D / (map.clientWidth || 435), reach = dMax() + 6 + nodeSize() / 2;
+    var cw = map.clientWidth || 435, h = (add.offsetWidth || nodePx(cw)) / 2 * D / cw, reach = dMax() + 6 + nodeSize() / 2;
     var c = Math.max(D / 2 - h - 6, (reach + h + 4) / Math.SQRT2);
     return { left: (50 - c / D * 100).toFixed(3) + '%', top: (50 + c / D * 100).toFixed(3) + '%' };
   }

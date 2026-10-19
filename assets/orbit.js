@@ -296,17 +296,17 @@
     decorate();
   }
 
-  /* ———— 罗盘右侧靠下的竖排停靠栏：样式切换（甲 乙 丙）+ 运行模式按钮 + 转速按钮 ———— */
-  var dock = map.querySelector('.compass-dock');
-  if (!dock) { dock = document.createElement('div'); dock.className = 'compass-dock'; map.appendChild(dock); }
-  var switcher = map.querySelector('.compass-switch');
+  /* ———— 罗盘上方的横排工具条（照旧版放在罗盘右上方）：底图小签（太极星盘 / 阴阳昼夜 / 浑天仪）+ 运行 / 转速 / 方向 / 排列 ———— */
+  var dock = map.parentNode.querySelector('.compass-dock');
+  if (!dock) { dock = document.createElement('div'); dock.className = 'compass-dock'; map.parentNode.insertBefore(dock, map); }
+  var switcher = dock.querySelector('.compass-switch');
   if (!switcher) {
     switcher = document.createElement('div');
     switcher.className = 'compass-switch';
     switcher.setAttribute('role', 'radiogroup');
     switcher.setAttribute('aria-label', '罗盘样式');
     switcher.innerHTML = ORDER.map(function (k, i) {
-      return '<button type="button" role="radio" data-compass="' + k + '" title="' + '甲乙丙'[i] + ' · ' + STYLES[k].name + '"><b>' + '甲乙丙'[i] + '</b><small>' + STYLES[k].name.slice(0, 2) + '</small></button>';
+      return '<button type="button" role="radio" data-compass="' + k + '" title="' + '甲乙丙'[i] + ' · ' + STYLES[k].name + '">' + STYLES[k].name + '</button>';
     }).join('');
   }
   dock.appendChild(switcher);
@@ -354,6 +354,7 @@
   }
   function openMotions(on) {
     if (on && typeof openDirs === 'function') openDirs(false);
+    if (on) dropAt(motionPanel, mover);
     motionPanel.hidden = !on; mover.setAttribute('aria-expanded', on ? 'true' : 'false');
     if (on) { var cur = motionPanel.querySelector('[aria-selected="true"]'); if (cur) cur.focus(); }
   }
@@ -373,6 +374,8 @@
   });
   document.addEventListener('pointerdown', function (e) { if (!motionPanel.hidden && !motionPanel.contains(e.target) && !mover.contains(e.target)) openMotions(false); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !motionPanel.hidden) { openMotions(false); mover.focus(); } });
+  // 下拉面板落在按钮正下方，左缘对齐按钮（工具条折行时也跟着按钮走）
+  function dropAt(panel, btn) { panel.style.left = btn.offsetLeft + 'px'; panel.style.top = (btn.offsetTop + btn.offsetHeight + 6) + 'px'; }
   function setMotion(key) {
     motion = key;
     savePrefs();
@@ -420,6 +423,7 @@
   }
   function openDirs(on) {
     if (on) openMotions(false);
+    if (on) dropAt(dirPanel, dirBtn);
     dirPanel.hidden = !on; dirBtn.setAttribute('aria-expanded', on ? 'true' : 'false');
     if (!on) trace(null);
   }
